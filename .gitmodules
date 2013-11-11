@@ -1,0 +1,3 @@
+[submodule "op_dtcwt/dtctw"]
+	path = op_dtcwt/dtctw
+	url = https://github.com/timseries/dtcwt.git
