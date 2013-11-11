@@ -1,5 +1,5 @@
 #!/usr/bin/python -tt
-class dtcwt(object):
+class dtcwt(operator):
     """
     """
     
