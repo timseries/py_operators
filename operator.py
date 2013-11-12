@@ -1,12 +1,12 @@
 #!/usr/bin/python -tt
-from py_utils import Section
+from py_utils import section
 
 class Operator(Section):
     """
     Base class for defining custom operators
     """
     
-    def __init__(self,ps_parameters, str_section):
+    def __init__(self,ps_parameters,str_section):
         """
         Class constructor for Operator.
         """       
