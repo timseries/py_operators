@@ -1,7 +1,7 @@
 #!/usr/bin/python -tt
-from py_utils import section
+from py_utils import section as s
 
-class Operator(Section):
+class Operator(s.Section):
     """
     Base class for defining custom operators
     """
@@ -10,7 +10,7 @@ class Operator(Section):
         """
         Class constructor for Operator.
         """       
-        super(Section,self).__init__(ps_parameters, str_section)
+        super(Operator,self).__init__(ps_parameters, str_section)
         self.ws_WS = None
         self.lgc_adjoint=0
         
