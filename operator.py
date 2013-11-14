@@ -1,7 +1,7 @@
 #!/usr/bin/python -tt
-from py_utils import section as s
+from py_utils.section import Section
 
-class Operator(s.Section):
+class Operator(Section):
     """
     Base class for defining custom operators
     """
@@ -10,22 +10,22 @@ class Operator(s.Section):
         """
         Class constructor for Operator.
         """       
-        super(Operator,self).__init__(ps_parameters, str_section)
-        self.ws_WS = None
-        self.lgc_adjoint=0
+        super(Operator,self).__init__(ps_parameters,str_section)
+        self.lgc_adjoint = 0
         
     def __invert__(self):
         """
         Overloading the ~ operator to indicate this object is in adjoint mode. 
         Clears the adjoint flag once a multiply happens
         """       
-        self.lgc_adjoint=1
-
+        self.lgc_adjoint = 1
+        return self
+    
     def __mul__(self,multiplicand):
         """
         Overloading the * operator.
         """       
         if self.lgc_adjoint==1:
-            self.lgc_adjoint=0
+            self.lgc_adjoint = 0
         return multiplicand
         
