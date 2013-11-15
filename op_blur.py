@@ -1,7 +1,6 @@
 #!/usr/bin/python -tt
 import numpy as np
 from numpy.fft import fftn, ifftn
-from numpy import hamming
 from scipy.ndimage.filters import convolve1d,convolve
 from scipy.ndimage.filters import gaussian_filter1d,gaussian_filter
 from scipy.ndimage.filters import uniform_filter1d,uniform_filter
@@ -18,45 +17,47 @@ class Blur(Operator):
         Class constructor for DTCWT
         """
         super(Blur,self).__init__(ps_parameters,str_section)
-        self.type = self.get_val('type',False)
-        self.size = self.get_val('size',True)
+        self.str_type = self.get_val('type',False)
+        self.ary_size = self.get_val('size',True)
         self.gaussian_sigma = self.get_val('gaussiansigma',True)
-        self.dimension = len(self.size)
-        self.blur_kernel = self.create_blur_kernel(self.size)
-        self.blur_kernel_f = None
-        
-    def __mul__(self,multiplicand):
+        self.int_dimension = len(self.ary_size)
+        self.ary_blur_kernel = self.create_blur_kernel(self.ary_size)
+        self.ary_blur_kernel_f = None
+        self.spatial = self.get_val('spatial',True)
+    def __mul__(self,ary_multiplicand):
         """
-        Overloading the * operator. multiplicand is:
+        Overloading the * operator. ary_multiplicand is:
         forward: a numpy array
         inverse: a wavelet transform object (WS).
         """
-        if self.blur_kernel_f==None or multiplicand.shape!=self.blur_kernel_f.shape:
-            #set up the fourier version of blur kernel once...
-            blur_kernel_f = np.zeros(multiplicand.shape)
-            corner_indices=tuple([list(np.arange(self.size[i])) for i \
-                                  in np.arange(self.dimension)])
-            blur_kernel_f[eval('np.ix_' + str(corner_indices))]=blur_kernel
-            blur_kernel_f = circshift(blur_kernel_f,tuple(-self.size/2))
-            self.blur_kernel_f = fftn(blur_kernel_f)
+        if not self.spatial:
+            if self.ary_blur_kernel_f==None or \
+              ary_multiplicand.shape!=self.ary_blur_kernel_f.shape:
+                #set up the fourier version of blur kernel once...
+                blur_kernel_f = np.zeros(ary_multiplicand.shape)
+                corner_indices=tuple([list(np.arange(self.ary_size[i])) for i \
+                                      in np.arange(self.int_dimension)])
+                blur_kernel_f[eval('np.ix_' + str(corner_indices))] = blur_kernel
+                blur_kernel_f = circshift(blur_kernel_f,tuple(-self.ary_size/2))
+                self.ary_blur_kernel_f = fftn(blur_kernel_f)
             
-        if not self.lgc_adjoint:
-            multiplicand = ifftn(self.blur_kernel_f * fftn(multiplicand))
-        else:
-            multiplicand = ifftn(conj(self.blur_kernel_f) * fftn(multiplicand))
-        return super(Blur,self).__mul__(multiplicand)
+                if not self.lgc_adjoint:
+                    ary_multiplicand = ifftn(self.ary_blur_kernel_f * fftn(ary_multiplicand))
+                else:
+                    ary_multiplicand = ifftn(np.conj(self.ary_blur_kernel_f) * fftn(ary_multiplicand))
+        return super(Blur,self).__mul__(ary_multiplicand)
 
-    def create_blur_kernel(self,size):
-        ary_kernel = np.zeros(self.size)
-        if self.type=='uniform':
-            ary_kernel[:] = 1/np.prod(self.size)
-        elif self.type=='gaussian':
-            ary_impulse = nd_impulse(self.size)
-            gaussian_filter(ary_impulse,self.gaussian_sigma,0,output=ary_kernel)
-        elif self.type=='hamming':
-            ary_kernel = np.hamming(self.size[0])
+    def create_blur_kernel(self):
+        ary_kernel = np.zeros(self.ary_size)
+        if self.str_type=='uniform':
+            ary_kernel[:] = 1/np.prod(self.ary_size)
+        elif self.str_type=='gaussian':
+            ary_impulse = nd_impulse(self.ary_size)
+            gaussian_filter(ary_impulse,self.flt_gaussian_sigma,0,output=ary_kernel)
+        elif self.str_type=='hamming':
+            ary_kernel = np.hamming(self.ary_size[0])
         else:
-            raise Exception("no such kernel " + self.type + " supported")    
+            raise Exception("no such kernel " + self.str_type + " supported")    
         
     class Factory:
         def create(self,ps_parameters,str_section):
