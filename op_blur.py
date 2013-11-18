@@ -5,8 +5,7 @@ from scipy.ndimage.filters import convolve1d,convolve
 from scipy.ndimage.filters import gaussian_filter1d,gaussian_filter
 from scipy.ndimage.filters import uniform_filter1d,uniform_filter
 from py_operators.operator import Operator
-from py_utils.matrix_utils import circshift
-from py_utils.signal_utilities.sig_utils import nd_impulse
+from py_utils.signal_utilities.sig_utils import nd_impulse, circshift
 class Blur(Operator):
     """
     Operator which performs a blur in either the spatial or fourier domain.
