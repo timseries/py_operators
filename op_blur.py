@@ -57,6 +57,9 @@ class Blur(Operator):
             ary_kernel = np.hamming(self.ary_size[0])
         else:
             raise Exception("no such kernel " + self.str_type + " supported")    
+
+    def get_spectrum(self):
+        return self.ary_blur_kernel_f    
         
     class Factory:
         def create(self,ps_parameters,str_section):
