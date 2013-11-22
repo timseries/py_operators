@@ -28,4 +28,6 @@ class Operator(Section):
         if self.lgc_adjoint==1:
             self.lgc_adjoint = 0
         return multiplicand
-        
+
+    def get_spectrum(self):
+        return 1
