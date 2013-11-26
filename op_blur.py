@@ -19,6 +19,8 @@ class Blur(Operator):
         self.str_type = self.get_val('type',False)
         self.ary_size = self.get_val('size',True)
         self.gaussian_sigma = self.get_val('gaussiansigma',True)
+        self.lgc_no_circ_shift = self.get_val('lgc_no_circ_shift',True)
+        self.lgc_even_fft = self.get_val('lgc_even_fft',True)
         self.int_dimension = len(self.ary_size)
         self.ary_blur_kernel = self.create_blur_kernel(self.ary_size)
         self.ary_blur_kernel_f = None
@@ -37,13 +39,13 @@ class Blur(Operator):
                 corner_indices=tuple([list(np.arange(self.ary_size[i])) for i \
                                       in np.arange(self.int_dimension)])
                 blur_kernel_f[eval('np.ix_' + str(corner_indices))] = blur_kernel
-                blur_kernel_f = circshift(blur_kernel_f,tuple(-self.ary_size/2))
+                if not self.lgc_no_circ_shift:
+                    blur_kernel_f = circshift(blurh_kernel_f,tuple(-self.ary_size/2))
                 self.ary_blur_kernel_f = fftn(blur_kernel_f)
-            
-                if not self.lgc_adjoint:
-                    ary_multiplicand = ifftn(self.ary_blur_kernel_f * fftn(ary_multiplicand))
-                else:
-                    ary_multiplicand = ifftn(np.conj(self.ary_blur_kernel_f) * fftn(ary_multiplicand))
+            if not self.lgc_adjoint:
+                ary_multiplicand = ifftn(self.ary_blur_kernel_f * fftn(ary_multiplicand))
+            else:
+                ary_multiplicand = ifftn(np.conj(self.ary_blur_kernel_f) * fftn(ary_multiplicand))
         return super(Blur,self).__mul__(ary_multiplicand)
 
     def create_blur_kernel(self):
