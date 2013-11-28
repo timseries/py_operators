@@ -38,8 +38,8 @@ class Blur(Operator):
         if not self.spatial:
             if not self.lgc_adjoint:
                 if ary_multiplicand.shape != self.forward_multiplicand_shape:
-                    self.forward_multiplicand_shape = ary_multiplicand.shape
                     #set up the fourier version of blur kernel once for this multiplicand size
+                    self.forward_multiplicand_shape = ary_multiplicand.shape
                     #if evenfft, we'll pad our multiplicand and psf so they're both even length
                     if self.lgc_evenfft:
                         self.forward_size_max = np.maximum(self.blur_kernel.shape,ary_multiplicand.shape)
