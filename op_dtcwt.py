@@ -24,9 +24,9 @@ class DTCWT(Operator):
         
     def __mul__(self,multiplicand):
         """
-        Overloading the * operator. multiplicand is:
+        Overloading the * operator. multiplicand is{
         forward: a numpy array
-        inverse: a wavelet transform object (WS).
+        adjoint: a wavelet transform object (WS).}
         """
         if not self.lgc_adjoint:
             int_dimension = multiplicand.ndim
