@@ -1,7 +1,7 @@
 #!/usr/bin/python -tt
 from numpy import arange
 from py_utils.section import Section
-from py_utils.section_factory import SectionFactory as sf 
+from py_utils.section_factory import SectionFactory as sf
 from py_operators.operator import Operator
 
 class OperatorComp(Operator):
@@ -15,6 +15,8 @@ class OperatorComp(Operator):
         """       
         super(OperatorComp,self).__init__(ps_parameters,str_section)
         self.ls_operator_names = self.get_val('operators',False)
+        if self.ls_operator_names.__class__.__name__ == 'str':
+            self.ls_operator_names = [self.ls_operator_names]
         self.ls_operators = [sf.create_section(ps_parameters,self.ls_operator_names[i]) \
           for i in arange(len(self.ls_operator_names))] #build the operator objects
         self.str_eval = self.get_mult_eval(False)  
@@ -37,6 +39,7 @@ class OperatorComp(Operator):
         """
         Returns a string used to evaluate the operator composition multiplication.
         """
+        str_adjoint = ''
         if lgc_adjoint:
             self.ls_operators.reverse()
             str_adjoint = '~'
@@ -53,7 +56,7 @@ class OperatorComp(Operator):
         Get the spectrum of the composite (by element-wise multiplying their respective spectra)
         """
         if len(self.ls_operators)==1:
-            val = ls_operators[0].get_spectrum()
+            val = self.ls_operators[0].get_spectrum()
         else:
             val = eval(self.str_eval_f)
         return val            
