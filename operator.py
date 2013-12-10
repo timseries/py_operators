@@ -25,8 +25,7 @@ class Operator(Section):
         """
         Overloading the * operator.
         """       
-        if self.lgc_adjoint==1:
-            self.lgc_adjoint = 0
+        self.lgc_adjoint = 0
         return multiplicand
 
     def get_spectrum(self):

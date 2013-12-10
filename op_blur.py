@@ -105,12 +105,12 @@ class Blur(Operator):
 
     def create_blur_kernel(self):
         ary_kernel = np.zeros(self.ary_size)
-        if self.str_type=='uniform':
-            ary_kernel[:] = 1/np.prod(self.ary_size)
-        elif self.str_type=='gaussian':
+        if self.str_type =='uniform':
+            ary_kernel[:] = 1.0 / np.prod(self.ary_size)
+        elif self.str_type =='gaussian':
             ary_impulse = nd_impulse(self.ary_size)
             gaussian_filter(ary_impulse,self.flt_gaussian_sigma,0,output=ary_kernel)
-        elif self.str_type=='hamming':
+        elif self.str_type =='hamming':
             ary_kernel = np.hamming(self.ary_size[0])
         elif self.str_type=='file':    
             raise Exception("not coded yet, use input class here")    
