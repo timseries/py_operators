@@ -6,6 +6,7 @@ from scipy.ndimage.filters import convolve1d,convolve
 from scipy.ndimage.filters import gaussian_filter1d,gaussian_filter
 from scipy.ndimage.filters import uniform_filter1d,uniform_filter
 from py_operators.operator import Operator
+from py_utils.section_factory import SectionFactory as sf
 from py_utils.signal_utilities.sig_utils import nd_impulse, circshift
 
 class Blur(Operator):
@@ -113,7 +114,8 @@ class Blur(Operator):
         elif self.str_type =='hamming':
             ary_kernel = np.hamming(self.ary_size[0])
         elif self.str_type=='file':    
-            raise Exception("not coded yet, use input class here")    
+            sec_input = sf.create_section(self.ps_parameters,self.get_val('filesection',False))
+            ary_kernel = sec_input.read(True)
         else:
             raise Exception("no such kernel " + self.str_type + " supported")    
         return ary_kernel
