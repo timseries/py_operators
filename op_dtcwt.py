@@ -47,7 +47,7 @@ class DTCWT(Operator):
                                                      self.qshift, \
                                                      self.discard_level_1)
             multiplicand = ws.WS(ary_scaling,tup_coeffs)
-        else:
+        else:#adjoint
             int_dimension = multiplicand.int_dimension
             ary_scaling = multiplicand.ary_scaling
             tup_coeffs = multiplicand.tup_coeffs
