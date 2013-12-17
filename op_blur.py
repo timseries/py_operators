@@ -7,7 +7,7 @@ from scipy.ndimage.filters import gaussian_filter1d,gaussian_filter
 from scipy.ndimage.filters import uniform_filter1d,uniform_filter
 from py_operators.operator import Operator
 from py_utils.section_factory import SectionFactory as sf
-from py_utils.signal_utilities.sig_utils import nd_impulse, circshift
+from py_utils.signal_utilities.sig_utils import nd_impulse, circshift, colonvec
 
 class Blur(Operator):
     """
@@ -22,7 +22,7 @@ class Blur(Operator):
         self.str_type = self.get_val('type',False)
         self.ary_size = self.get_val('size',True)
         self.gaussian_sigma = self.get_val('gaussiansigma',True)
-        self.lgc_even_fft = self.get_val('lgc_even_fft',True)
+        self.lgc_even_fft = self.get_val('evenfft',True)
         self.int_dimension = len(self.ary_size)
         self.blur_kernel = self.create_blur_kernel()
         self.forward_blur_kernel_f = None
@@ -32,6 +32,7 @@ class Blur(Operator):
         self.fft_size = None #the size of the fft we'll use
         self.forward_multiplicand_shape = None
         self.adjoint_multiplicand_shape = None
+        
     def __mul__(self,ary_multiplicand):
         """
         Overloading the * operator. ary_multiplicand is:
@@ -115,24 +116,11 @@ class Blur(Operator):
             ary_kernel = np.hamming(self.ary_size[0])
         elif self.str_type=='file':    
             sec_input = sf.create_section(self.ps_parameters,self.get_val('filesection',False))
-            ary_kernel = sec_input.read(True)
+            ary_kernel = sec_input.read({},True)
         else:
             raise Exception("no such kernel " + self.str_type + " supported")    
         return ary_kernel
 
-    def colonvec(self, ary_small, ary_large):
-        """
-        Compute the indices used to pad/crop the results of applying the fft with augmented dimensions
-        """
-        ary_max = np.maximum(ary_small.shape,ary_large.shape)
-        if ary_small.ndim == 1:
-            ary_small = ary_small * np.ones(ary_max)
-        elif ary_large.ndim == 1:         
-            ary_large = ary_large * np.ones(ary_max)
-        else:
-            raise Exception("unsupported boundary case")    
-        return str(tuple([list(np.arange(ary_small[i],ary_large[i])) for i in np.arange(ary_max.ndim)]))
-            
     def get_spectrum(self):
         return self.forward_blur_kernel_f    
         
