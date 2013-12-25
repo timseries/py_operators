@@ -20,7 +20,8 @@ class DTCWT(Operator):
         self.nlevels =  self.get_val('nlevels',True)
         self.biort = self.get_val('biort',False)
         self.qshift = self.get_val('qshift',False)
-        self.discard_level_1 = self.get_val('discard_level_1',False)
+        self.ext_mode = max(self.get_val('ext_mode',True),4)
+        self.discard_level_1 = self.get_val('discard_level_1',True)
         
     def __mul__(self,multiplicand):
         """
@@ -45,6 +46,7 @@ class DTCWT(Operator):
                                                      self.nlevels, \
                                                      self.biort, \
                                                      self.qshift, \
+                                                     self.ext_mode, \
                                                      self.discard_level_1)
             multiplicand = ws.WS(ary_scaling,tup_coeffs)
         else:#adjoint
@@ -63,7 +65,7 @@ class DTCWT(Operator):
                 multiplicand = dtwaveifm3(ary_scaling,tup_coeffs, \
                                              self.biort, \
                                              self.qshift, \
-                                             self.discard_level_1)
+                                             self.ext_mode)
         return super(DTCWT,self).__mul__(multiplicand)
 
     class Factory:
