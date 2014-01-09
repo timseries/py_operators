@@ -75,10 +75,7 @@ class Blur(Operator):
                 ary_multiplicand = self.forward_blur_kernel_f * fftn(ary_multiplicand,s=self.forward_fft_size)
                 if self.lgc_even_fft:
                     ary_multiplicand = ifftn(ary_multiplicand)
-                    #print 'y indexing'
-                    #print str(colonvec(self.forward_size_min, self.forward_size_max))
-                    ary_multiplicand = ary_multiplicand[eval('np.ix_'+str(colonvec(self.forward_size_min, \
-                                                                                   self.forward_size_max)))]
+                    ary_multiplicand = ary_multiplicand[colonvec(self.forward_size_min, self.forward_size_max)]
                     ary_multiplicand = fftn(ary_multiplicand)
             else:#adjoint
                 if ary_multiplicand.shape != self.adjoint_multiplicand_shape:
@@ -95,26 +92,18 @@ class Blur(Operator):
                         self.adjoint_blur_kernel_f = conj(self.forward_blur_kernel_f)
                 if self.lgc_even_fft: #unpad first           
                     ary_result_temp = np.zeros(self.adjoint_size_min)
-                    #print self.adjoint_multiplicand_shape
-                    #print self.blur_kernel.shape
-                    #print self.adjoint_size_min
-                    #print str(colonvec(array(self.adjoint_size_min) - \
-                    #                                             array(self.adjoint_multiplicand_shape) + 1,\
-                    #                                             array(self.adjoint_size_min)))
-                    ary_result_temp[eval('np.ix_' + str(colonvec(array(self.adjoint_size_min) - \
-                                                                 array(self.adjoint_multiplicand_shape) + 1,\
-                                                                 array(self.adjoint_size_min))))] = ary_multiplicand
+                    ary_result_temp[colonvec(array(self.adjoint_size_min) - \
+                                             array(self.adjoint_multiplicand_shape) + 1,\
+                                             array(self.adjoint_size_min))] = ary_multiplicand
+
                     ary_multiplicand = ary_result_temp
                 ary_multiplicand = self.adjoint_blur_kernel_f * fftn(ary_multiplicand,s=self.adjoint_fft_size)
                 if self.lgc_even_fft: #unpad in spatial domain
                     ary_multiplicand = ifftn(ary_multiplicand)
-                    #print np.maximum(array(self.blur_kernel.shape) - array(self.adjoint_multiplicand_shape),0)
-                    str_adj_subset = str(colonvec(np.ones(self.int_dimension,),\
-                                                  array(self.adjoint_size_min) - \
-                                                  np.maximum(array(self.blur_kernel.shape) - \
-                                                             array(self.adjoint_multiplicand_shape),0)))
-                    #print str_adj_subset                              
-                    ary_multiplicand = ary_multiplicand[eval('np.ix_' + str_adj_subset)]
+                    ary_multiplicand = ary_multiplicand[colonvec(np.ones(self.int_dimension,),\
+                                                                 array(self.adjoint_size_min) - \
+                                                                 np.maximum(array(self.blur_kernel.shape) - \
+                                                                    array(self.adjoint_multiplicand_shape),0))]
                     ary_multiplicand = fftn(ary_multiplicand)
         else:
             raise Exception("not coded yet, use input class here")    
