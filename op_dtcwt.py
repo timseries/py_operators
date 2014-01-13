@@ -24,7 +24,7 @@ class DTCWT(Operator):
         self.biort = self.get_val('biort',False)
         self.qshift = self.get_val('qshift',False)
         self.ext_mode = max(self.get_val('ext_mode',True),4)
-        self.include_scale = self.get_val('include_scale',True)
+        self.discard_level_1 = self.get_val('discard_level_1',True)
         self.open_cl = self.get_val('opencl',True)
         if self.open_cl:
             from dtcwt.backend.backend_opencl import Transform2d, Transform3d
@@ -64,9 +64,9 @@ class DTCWT(Operator):
                 #                                            self.qshift, \
                 #                                            self.ext_mode, \
                 #                                            self.discard_level_1)
-                transform_domain_signal = self.transform.forward(multiplicand, self.nlevels, self.include_scale)
+                transform_domain_signal = self.transform.forward(multiplicand, self.nlevels)
                 multiplicand = ws.WS(transform_domain_signal.lowpass,transform_domain_signal.subbands)
-        #multiplicand = ws.WS(ary_scaling,tup_coeffs)
+                #multiplicand = ws.WS(ary_scaling,tup_coeffs)
         else:#adjoint
             int_dimension = multiplicand.int_dimension
             ary_scaling = multiplicand.ary_scaling
@@ -85,7 +85,7 @@ class DTCWT(Operator):
             #                                 self.qshift, \
             #                                 self.ext_mode)
                 multiplicand = TransformDomainSignal(ary_scaling, tup_coeffs)
-                multiplicand = self.transform.inverse(multiplicand)
+                multiplicand = self.transform.inverse(multiplicand).value
         return super(DTCWT,self).__mul__(multiplicand)
 
     class Factory:
