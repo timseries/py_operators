@@ -20,7 +20,7 @@ class Blur(Operator):
         """
         super(Blur,self).__init__(ps_parameters,str_section)
         self.str_type = self.get_val('type',False)
-        self.output_fourier = self.get_val('outputfourier',False)
+        self.output_fourier = self.get_val('outputfourier',True)
         self.gaussian_sigma = self.get_val('gaussiansigma',True)
         self.lgc_even_fft = self.get_val('evenfft',True)
         self.ary_size = None
@@ -77,7 +77,7 @@ class Blur(Operator):
                 if not self.output_fourier and not self.lgc_even_fft:
                     ary_multiplicand = ifftn(ary_multiplicand)
                 if self.lgc_even_fft: 
-                    ary_multiplicand = ifftn(ary_multiplicand) #this mode is spatial output...
+                    ary_multiplicand = np.real(ifftn(ary_multiplicand)) #this mode is spatial output...
                     ary_multiplicand = ary_multiplicand[colonvec(self.forward_size_min, self.forward_size_max)]
                     if self.output_fourier:
                         ary_multiplicand = fftn(ary_multiplicand)
