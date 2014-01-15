@@ -103,9 +103,9 @@ class Blur(Operator):
                     ary_multiplicand = ary_result_temp
                 ary_multiplicand = self.adjoint_blur_kernel_f * fftn(ary_multiplicand,s=self.adjoint_fft_size)
                 if not self.output_fourier and not self.lgc_even_fft:
-                    ary_multiplicand = ifftn(ary_multiplicand)
+                    ary_multiplicand = np.real(ifftn(ary_multiplicand))
                 if self.lgc_even_fft: #unpad in spatial domain
-                    ary_multiplicand = ifftn(ary_multiplicand)
+                    ary_multiplicand = np.real(ifftn(ary_multiplicand))
                     ary_multiplicand = ary_multiplicand[colonvec(np.ones(self.int_dimension,),\
                                                                  array(self.adjoint_size_min) - \
                                                                  np.maximum(array(self.blur_kernel.shape) - \
