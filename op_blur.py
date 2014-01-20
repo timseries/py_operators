@@ -76,18 +76,12 @@ class Blur(Operator):
                         self.forward_blur_kernel_f = circshift(self.forward_blur_kernel_f,tuple(-self.ary_size/2))
                         #take the fft, with the correct size
                     self.forward_blur_kernel_f = fftn(self.forward_blur_kernel_f,s=self.forward_fft_size)
-                    #numpy_to_mat(self.forward_blur_kernel_f,'/home/tim/repos/py_solvers/applications/deconvolution_challenge/Hhat_py.mat','Hhat_py')
-                    #numpy_to_mat(ary_multiplicand,'/home/tim/repos/py_solvers/applications/deconvolution_challenge/x_py.mat','x_py')    
                 ary_multiplicand_hat = fftn(ary_multiplicand,s=self.forward_fft_size)
-                #numpy_to_mat(ary_multiplicand_hat,'/home/tim/repos/py_solvers/applications/deconvolution_challenge/xhat_py.mat','xhat_py')    
                 ary_multiplicand = self.forward_blur_kernel_f * fftn(ary_multiplicand,s=self.forward_fft_size)
-                #numpy_to_mat(ary_multiplicand,'/home/tim/repos/py_solvers/applications/deconvolution_challenge/Hxhat_py.mat','Hxhat_py')
-
                 if not self.output_fourier and not self.lgc_even_fft:
                     ary_multiplicand = ifftn(ary_multiplicand)
                 if self.lgc_even_fft: 
                     ary_multiplicand = np.real(ifftn(ary_multiplicand)) #this mode is spatial output...
-                    #numpy_to_mat(ary_multiplicand,'/home/tim/repos/py_solvers/applications/deconvolution_challenge/g_py.mat','g_py')
                     ary_multiplicand = ary_multiplicand[colonvec(self.forward_size_min, self.forward_size_max)]
                     if self.output_fourier:
                         ary_multiplicand = fftn(ary_multiplicand)
