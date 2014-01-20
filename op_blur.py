@@ -9,6 +9,9 @@ from py_operators.operator import Operator
 from py_utils.section_factory import SectionFactory as sf
 from py_utils.signal_utilities.sig_utils import nd_impulse, circshift, colonvec
 
+#for debug
+from py_utils.helpers import numpy_to_mat
+
 class Blur(Operator):
     """
     Operator which performs a blur in either the spatial or fourier domain.
@@ -73,33 +76,39 @@ class Blur(Operator):
                         self.forward_blur_kernel_f = circshift(self.forward_blur_kernel_f,tuple(-self.ary_size/2))
                         #take the fft, with the correct size
                     self.forward_blur_kernel_f = fftn(self.forward_blur_kernel_f,s=self.forward_fft_size)
+                    #numpy_to_mat(self.forward_blur_kernel_f,'/home/tim/repos/py_solvers/applications/deconvolution_challenge/Hhat_py.mat','Hhat_py')
+                    #numpy_to_mat(ary_multiplicand,'/home/tim/repos/py_solvers/applications/deconvolution_challenge/x_py.mat','x_py')    
+                ary_multiplicand_hat = fftn(ary_multiplicand,s=self.forward_fft_size)
+                #numpy_to_mat(ary_multiplicand_hat,'/home/tim/repos/py_solvers/applications/deconvolution_challenge/xhat_py.mat','xhat_py')    
                 ary_multiplicand = self.forward_blur_kernel_f * fftn(ary_multiplicand,s=self.forward_fft_size)
+                #numpy_to_mat(ary_multiplicand,'/home/tim/repos/py_solvers/applications/deconvolution_challenge/Hxhat_py.mat','Hxhat_py')
+
                 if not self.output_fourier and not self.lgc_even_fft:
                     ary_multiplicand = ifftn(ary_multiplicand)
                 if self.lgc_even_fft: 
                     ary_multiplicand = np.real(ifftn(ary_multiplicand)) #this mode is spatial output...
+                    #numpy_to_mat(ary_multiplicand,'/home/tim/repos/py_solvers/applications/deconvolution_challenge/g_py.mat','g_py')
                     ary_multiplicand = ary_multiplicand[colonvec(self.forward_size_min, self.forward_size_max)]
                     if self.output_fourier:
                         ary_multiplicand = fftn(ary_multiplicand)
             else:#adjoint
                 if ary_multiplicand.shape != self.adjoint_multiplicand_shape:
-                    self.adjoint_multiplicand_shape = ary_multiplicand.shape
+                    self.adjoint_multiplicand_shape = ary_multiplicand.shape #L
                     if self.lgc_even_fft:
                         self.adjoint_size_min = np.minimum(array(self.adjoint_multiplicand_shape) + \
                                                            array(self.blur_kernel.shape) - 1, \
-                                                           2 * array(self.adjoint_multiplicand_shape) - 1)
-                        self.adjoint_fft_size = self.adjoint_size_min + np.mod(self.adjoint_size_min,2)
+                                                           2 * array(self.adjoint_multiplicand_shape) - 1) #N
+                        self.adjoint_fft_size = self.adjoint_size_min + np.mod(self.adjoint_size_min,2) #N+M
                         self.adjoint_blur_kernel_f = conj(fftn(self.blur_kernel,s=self.adjoint_fft_size))
                     else:
                         self.adjoint_size_min = self.forward_blur_kernel_f.shape
                         self.adjoint_fft_size = self.forward_blur_kernel_f.shape
                         self.adjoint_blur_kernel_f = conj(self.forward_blur_kernel_f)
-                if self.lgc_even_fft: #unpad first           
+                if self.lgc_even_fft: #unpad first
                     ary_result_temp = np.zeros(self.adjoint_size_min)
                     ary_result_temp[colonvec(array(self.adjoint_size_min) - \
                                              array(self.adjoint_multiplicand_shape) + 1,\
                                              array(self.adjoint_size_min))] = ary_multiplicand
-
                     ary_multiplicand = ary_result_temp
                 ary_multiplicand = self.adjoint_blur_kernel_f * fftn(ary_multiplicand,s=self.adjoint_fft_size)
                 if not self.output_fourier and not self.lgc_even_fft:
