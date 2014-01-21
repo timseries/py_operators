@@ -79,7 +79,7 @@ class Blur(Operator):
                 ary_multiplicand_hat = fftn(ary_multiplicand,s=self.forward_fft_size)
                 ary_multiplicand = self.forward_blur_kernel_f * fftn(ary_multiplicand,s=self.forward_fft_size)
                 if not self.output_fourier and not self.lgc_even_fft:
-                    ary_multiplicand = ifftn(ary_multiplicand)
+                    ary_multiplicand = np.real(ifftn(ary_multiplicand))
                 if self.lgc_even_fft: 
                     ary_multiplicand = np.real(ifftn(ary_multiplicand)) #this mode is spatial output...
                     ary_multiplicand = ary_multiplicand[colonvec(self.forward_size_min, self.forward_size_max)]
@@ -121,10 +121,9 @@ class Blur(Operator):
         return super(Blur,self).__mul__(ary_multiplicand)
 
     def create_blur_kernel(self):
-        ary_kernel = np.zeros(self.ary_size)
         if self.str_type!='file':
             self.ary_size = self.get_val('size',True)
-
+            ary_kernel = np.zeros(self.ary_size)
         if self.str_type =='uniform':
             ary_kernel[:] = 1.0 / np.prod(self.ary_size)
         elif self.str_type =='gaussian':

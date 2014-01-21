@@ -41,20 +41,20 @@ class DTCWT(Operator):
         if not self.lgc_adjoint:
             int_dimension = multiplicand.ndim
             if self.transform == None:
-                self.transform = self.transforms[int_dimension-2](biort = self.biort, qshift = self.qshift, ext_mode=self.ext_mode)
-
+                #self.transform = self.transforms[int_dimension-2](biort = self.biort, qshift = self.qshift, ext_mode=self.ext_mode)
+                self.transform = self.transforms[int_dimension-2](biort = self.biort, qshift = self.qshift)
             if int_dimension==1:
                 #no backend implementations for 1d yet, use standard numpy interface
                 ary_scaling,tup_coeffs = dtwavexfm(multiplicand, \
                                                      self.nlevels, \
                                                      self.biort, \
                                                      self.qshift)
-            #elif int_dimension==2:
-                #                ary_scaling,tup_coeffs = dtwavexfm2(multiplicand, \
-                #                                     self.nlevels, \
-                #                                     self.biort, \
-                #                                     self.qshift)
-                ws.WS(ary_scaling,tup_coeffs)
+            elif int_dimension==2:
+                ary_scaling,tup_coeffs = dtwavexfm2(multiplicand, \
+                                                     self.nlevels, \
+                                                     self.biort, \
+                                                     self.qshift)
+                multiplicand = ws.WS(ary_scaling,tup_coeffs)
             else:
         
 
@@ -75,10 +75,10 @@ class DTCWT(Operator):
                 multiplicand = dtwaveifm(ary_scaling,tup_coeffs, \
                                             self.biort, \
                                             self.qshift)
-            #elif int_dimension==2:
-            #    multiplicand = dtwaveifm2(ary_scaling,tup_coeffs, \
-            #                                 self.biort, \
-            #                                 self.qshift)
+            elif int_dimension==2:
+                multiplicand = dtwaveifm2(ary_scaling,tup_coeffs, \
+                                             self.biort, \
+                                             self.qshift)
             else:
             #    multiplicand = dtwaveifm3(ary_scaling,tup_coeffs, \
             #                                 self.biort, \
