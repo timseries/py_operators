@@ -20,6 +20,7 @@ class DTCWT(Operator):
         Class constructor for DTCWT
         """
         super(DTCWT,self).__init__(ps_parameters,str_section)
+        self.include_scale = self.get_val('includescale',True)
         self.nlevels =  self.get_val('nlevels',True)
         self.biort = self.get_val('biort',False)
         self.qshift = self.get_val('qshift',False)
@@ -32,6 +33,7 @@ class DTCWT(Operator):
             from dtcwt.backend.backend_numpy import Transform2d,Transform3d
         self.transforms = [Transform2d,Transform3d]
         self.transform = None
+        
     def __mul__(self,multiplicand):
         """
         Overloading the * operator. multiplicand is{
@@ -50,11 +52,13 @@ class DTCWT(Operator):
                                                      self.biort, \
                                                      self.qshift)
             elif int_dimension==2:
-                ary_scaling,tup_coeffs = dtwavexfm2(multiplicand, \
-                                                     self.nlevels, \
-                                                     self.biort, \
-                                                     self.qshift)
-                multiplicand = ws.WS(ary_scaling,tup_coeffs)
+                #ary_scaling,tup_coeffs = dtwavexfm2(multiplicand, \
+                #self.nlevels, \
+                #self.biort, \
+                #self.qshift)
+                                                        #multiplicand = ws.WS(ary_scaling,tup_coeffs)
+                td_signal = self.transform.forward(multiplicand, self.nlevels, self.include_scale)
+                multiplicand = ws.WS(td_signal.lowpass,td_signal.subbands,td_signal.scales)
             else:
         
 
