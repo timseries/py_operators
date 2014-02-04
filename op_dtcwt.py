@@ -8,6 +8,8 @@ from py_operators.operator import Operator
 
 from dtcwt.backend.base import TransformDomainSignal, ReconstructedSignal
 
+import pdb
+
 class DTCWT(Operator):
     """
     Operator which performs the forward/inverse(~) DTCWT, which inherits methods from 
@@ -47,48 +49,48 @@ class DTCWT(Operator):
                 self.transform = self.transforms[int_dimension-2](biort = self.biort, qshift = self.qshift)
             if int_dimension==1:
                 #no backend implementations for 1d yet, use standard numpy interface
-                ary_scaling,tup_coeffs = dtwavexfm(multiplicand, \
+                ary_lowpass,tup_coeffs = dtwavexfm(multiplicand, \
                                                      self.nlevels, \
                                                      self.biort, \
                                                      self.qshift)
             elif int_dimension==2:
-                #ary_scaling,tup_coeffs = dtwavexfm2(multiplicand, \
+                #ary_lowpass,tup_coeffs = dtwavexfm2(multiplicand, \
                 #self.nlevels, \
                 #self.biort, \
                 #self.qshift)
-                                                        #multiplicand = ws.WS(ary_scaling,tup_coeffs)
+                                                        #multiplicand = ws.WS(ary_lowpass,tup_coeffs)
                 td_signal = self.transform.forward(multiplicand, self.nlevels, self.include_scale)
                 multiplicand = ws.WS(td_signal.lowpass,td_signal.subbands,td_signal.scales)
             else:
         
 
-                #ary_scaling,tup_coeffs = dtwavexfm3(multiplicand, \
+                #ary_lowpass,tup_coeffs = dtwavexfm3(multiplicand, \
                 #                                            self.nlevels, \
                 #                                            self.biort, \
                 #                                            self.qshift, \
                 #                                            self.ext_mode, \
                 #                                            self.discard_level_1)
-                transform_domain_signal = self.transform.forward(multiplicand, self.nlevels)
-                multiplicand = ws.WS(transform_domain_signal.lowpass,transform_domain_signal.subbands)
-                #multiplicand = ws.WS(ary_scaling,tup_coeffs)
+                td_signal = self.transform.forward(multiplicand, self.nlevels, include_scale=self.include_scale)
+                multiplicand = ws.WS(td_signal.lowpass,td_signal.subbands, td_signal.scales)
+                #multiplicand = ws.WS(ary_lowpass,tup_coeffs)
         else:#adjoint
             int_dimension = multiplicand.int_dimension
-            ary_scaling = multiplicand.ary_scaling
+            ary_lowpass = multiplicand.ary_lowpass
             tup_coeffs = multiplicand.tup_coeffs
             if int_dimension==1:
-                multiplicand = dtwaveifm(ary_scaling,tup_coeffs, \
+                multiplicand = dtwaveifm(ary_lowpass,tup_coeffs, \
                                             self.biort, \
                                             self.qshift)
             elif int_dimension==2:
-                multiplicand = dtwaveifm2(ary_scaling,tup_coeffs, \
+                multiplicand = dtwaveifm2(ary_lowpass,tup_coeffs, \
                                              self.biort, \
                                              self.qshift)
             else:
-            #    multiplicand = dtwaveifm3(ary_scaling,tup_coeffs, \
+            #    multiplicand = dtwaveifm3(ary_lowpass,tup_coeffs, \
             #                                 self.biort, \
             #                                 self.qshift, \
             #                                 self.ext_mode)
-                multiplicand = TransformDomainSignal(ary_scaling, tup_coeffs)
+                multiplicand = TransformDomainSignal(ary_lowpass, tup_coeffs)
                 multiplicand = self.transform.inverse(multiplicand).value
         return super(DTCWT,self).__mul__(multiplicand)
 
