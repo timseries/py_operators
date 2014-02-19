@@ -1,14 +1,11 @@
 #!/usr/bin/python -tt
 import numpy as np
-from dtcwt import dtwavexfm, dtwaveifm
-from dtcwt import dtwavexfm2, dtwaveifm2
-from dtcwt import dtwavexfm3, dtwaveifm3, biort, qshift
+
+from dtcwt.numpy.common import Pyramid
+
 from py_utils.signal_utilities import ws as ws
 from py_operators.operator import Operator
 
-from dtcwt.backend.base import TransformDomainSignal, ReconstructedSignal
-
-import pdb
 
 class DTCWT(Operator):
     """
@@ -30,10 +27,11 @@ class DTCWT(Operator):
         self.discard_level_1 = self.get_val('discard_level_1',True)
         self.open_cl = self.get_val('opencl',True)
         if self.open_cl:
-            from dtcwt.backend.backend_opencl import Transform2d, Transform3d
+            from dtcwt.opencl import Transform2d, Transform3d
+            Transform1d = None #this has nae been implemented yet
         else:    
-            from dtcwt.backend.backend_numpy import Transform2d,Transform3d
-        self.transforms = [Transform2d,Transform3d]
+            from dtcwt.numpy import Transform1d,Transform2d,Transform3d
+        self.transforms = [Transform1d,Transform2d,Transform3d]
         self.transform = None
         
     def __mul__(self,multiplicand):
@@ -45,53 +43,16 @@ class DTCWT(Operator):
         if not self.lgc_adjoint:
             int_dimension = multiplicand.ndim
             if self.transform == None:
-                #self.transform = self.transforms[int_dimension-2](biort = self.biort, qshift = self.qshift, ext_mode=self.ext_mode)
-                self.transform = self.transforms[int_dimension-2](biort = self.biort, qshift = self.qshift)
-            if int_dimension==1:
-                #no backend implementations for 1d yet, use standard numpy interface
-                ary_lowpass,tup_coeffs = dtwavexfm(multiplicand, \
-                                                     self.nlevels, \
-                                                     self.biort, \
-                                                     self.qshift)
-            elif int_dimension==2:
-                #ary_lowpass,tup_coeffs = dtwavexfm2(multiplicand, \
-                #self.nlevels, \
-                #self.biort, \
-                #self.qshift)
-                                                        #multiplicand = ws.WS(ary_lowpass,tup_coeffs)
-                td_signal = self.transform.forward(multiplicand, self.nlevels, self.include_scale)
-                multiplicand = ws.WS(td_signal.lowpass,td_signal.subbands,td_signal.scales)
-            else:
-        
-
-                #ary_lowpass,tup_coeffs = dtwavexfm3(multiplicand, \
-                #                                            self.nlevels, \
-                #                                            self.biort, \
-                #                                            self.qshift, \
-                #                                            self.ext_mode, \
-                #                                            self.discard_level_1)
-                td_signal = self.transform.forward(multiplicand, self.nlevels, include_scale=self.include_scale)
-                multiplicand = ws.WS(td_signal.lowpass,td_signal.subbands, td_signal.scales)
-                #multiplicand = ws.WS(ary_lowpass,tup_coeffs)
-        else:#adjoint
-            int_dimension = multiplicand.int_dimension
-            ary_lowpass = multiplicand.ary_lowpass
-            tup_coeffs = multiplicand.tup_coeffs
-            if int_dimension==1:
-                multiplicand = dtwaveifm(ary_lowpass,tup_coeffs, \
-                                            self.biort, \
-                                            self.qshift)
-            elif int_dimension==2:
-                multiplicand = dtwaveifm2(ary_lowpass,tup_coeffs, \
-                                             self.biort, \
-                                             self.qshift)
-            else:
-            #    multiplicand = dtwaveifm3(ary_lowpass,tup_coeffs, \
-            #                                 self.biort, \
-            #                                 self.qshift, \
-            #                                 self.ext_mode)
-                multiplicand = TransformDomainSignal(ary_lowpass, tup_coeffs)
-                multiplicand = self.transform.inverse(multiplicand).value
+                if int_dimension == 3:
+                    self.transform = self.transforms[2](biort=self.biort, qshift=self.qshift, \
+                                                        ext_mode=self.ext_mode, \
+                                                        discard_level_1=self.discard_level_1)
+                else:
+                    self.transform = self.transforms[int_dimension-1](biort = self.biort, qshift = self.qshift)
+            td_signal = self.transform.forward(multiplicand, self.nlevels, self.include_scale)
+            multiplicand = ws.WS(td_signal.lowpass,td_signal.highpasses,td_signal.scales)
+        else:#adjoint, multiplicand should be a WS object
+            multiplicand = self.trasnform.inverse(Pyramid(multiplicand.ary_lowpass,multiplicand.tup_coeffs))
         return super(DTCWT,self).__mul__(multiplicand)
 
     class Factory:
