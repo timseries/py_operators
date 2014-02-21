@@ -52,7 +52,7 @@ class DTCWT(Operator):
             td_signal = self.transform.forward(multiplicand, self.nlevels, self.include_scale)
             multiplicand = ws.WS(td_signal.lowpass,td_signal.highpasses,td_signal.scales)
         else:#adjoint, multiplicand should be a WS object
-            multiplicand = self.trasnform.inverse(Pyramid(multiplicand.ary_lowpass,multiplicand.tup_coeffs))
+            multiplicand = self.transform.inverse(Pyramid(multiplicand.ary_lowpass,multiplicand.tup_coeffs))
         return super(DTCWT,self).__mul__(multiplicand)
 
     class Factory:
