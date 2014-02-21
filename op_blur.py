@@ -11,7 +11,6 @@ from py_operators.operator import Operator
 from py_utils.section_factory import SectionFactory as sf
 from py_utils.signal_utilities.sig_utils import nd_impulse, circshift, colonvec
 
-
 class Blur(Operator):
     """
     Operator which performs a blur in either the spatial or Fourier 
