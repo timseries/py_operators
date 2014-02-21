@@ -21,6 +21,13 @@ class Operator(Section):
         self.lgc_adjoint = 1
         return self
     
+    def t(self):
+        """
+        Also performs the operator adjoint/Hermetian transpose.
+        """             
+        self.__invert__
+        return self
+    
     def __mul__(self,multiplicand):
         """
         Overloading the * operator.
