@@ -9,7 +9,9 @@ from scipy.ndimage.filters import gaussian_filter1d,gaussian_filter
 from scipy.ndimage.filters import uniform_filter1d,uniform_filter
 from py_operators.operator import Operator
 from py_utils.section_factory import SectionFactory as sf
-from py_utils.signal_utilities.sig_utils import nd_impulse, circshift, colonvec
+from py_utils.signal_utilities.sig_utils import nd_impulse, circshift, colonvec, gaussian
+
+import pdb
 
 class Blur(Operator):
     """
@@ -89,7 +91,7 @@ class Blur(Operator):
                     c_i = eval('np.ix_' + str(c_i))
                     self.for_kernel_f[c_i] = self.kernel
                     self.for_kernel_f = circshift(self.for_kernel_f,
-                                                  tuple(-self.ary_sz/2))
+                                                  tuple((-self.ary_sz/2.0).astype('uint16')))
                     #take the fft, with the correct size
                 self.for_kernel_f = fftn(self.for_kernel_f,
                                          s=self.for_fft_sz)
@@ -97,9 +99,9 @@ class Blur(Operator):
                                                  s=self.for_fft_sz)
             if not self.output_fourier and not self.lgc_even_fft:
                 ary_mcand = np.real(ifftn(ary_mcand))
-                if self.lgc_even_fft: #we must unpad first
-                    ary_mcand = np.real(ifftn(ary_mcand)) 
-                    ary_mcand = ary_mcand[colonvec(self.for_sz_min,
+            if self.lgc_even_fft: #we must unpad first
+                ary_mcand = np.real(ifftn(ary_mcand)) 
+                ary_mcand = ary_mcand[colonvec(self.for_sz_min,
                                                self.for_sz_max)]
                 if self.output_fourier:
                     ary_mcand = fftn(ary_mcand)
@@ -153,6 +155,7 @@ class Blur(Operator):
             ary_impulse = nd_impulse(self.ary_sz)
             gaussian_filter(ary_impulse,self.gaussian_sigma,
                             0,output=ary_kernel)
+            ary_kernel = gaussian(self.ary_sz,self.gaussian_sigma)
         elif self.str_type =='hamming':
             ary_kernel = np.hamming(self.ary_sz[0])
         elif self.str_type=='file':    

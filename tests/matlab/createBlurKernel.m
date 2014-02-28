@@ -1,10 +1,6 @@
 function H = createBlurKernel(strType,intD,arySize,arySigma)
 % CREATEBLURKERNEL - Create a blur kernel with the correct dimension, size, and type.
 %   
-    if nargin < 4
-        arySigma(1)=9;
-    else
-        arySigma=varargin{1};
     switch strType
       case 'uniform'
         switch intD
@@ -23,7 +19,6 @@ function H = createBlurKernel(strType,intD,arySize,arySigma)
             error('unsupported dimension for hamming window');
         end
       case 'gaussian'
-        arySigma=obj.get('GaussianSigma');
         switch intD
           case 1
             dblWidth=max(arySize(1),round((6*arySigma(1)-1)/2));            
@@ -67,6 +62,6 @@ function H = createBlurKernel(strType,intD,arySize,arySigma)
             error('no code support for 2d asymmetric gaussian');
         end
     end      
-end % function H = createBlurKernel(obj)
+end 
     
 
