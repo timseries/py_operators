@@ -28,7 +28,8 @@ pip-log.txt
 nosetests.xml
 
 #Unit test temporary data
-verification.mat
+verification.*
+qbgn.*
 
 # Translations
 *.mo
