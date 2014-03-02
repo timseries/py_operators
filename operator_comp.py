@@ -1,5 +1,6 @@
 #!/usr/bin/python -tt
-from numpy import arange
+from numpy import arange, conj, real
+from numpy.fft import fftn, ifftn
 from py_utils.section import Section
 from py_utils.section_factory import SectionFactory as sf
 from py_operators.operator import Operator
@@ -36,6 +37,8 @@ class OperatorComp(Operator):
             multiplicand = eval(self.str_eval_adjoint)
         else:
             multiplicand = eval(self.str_eval)
+        if self.output_fourier:
+            multiplicand = fftn(multiplicand)
         return super(OperatorComp,self).__mul__(multiplicand)        
 
     def get_mult_eval(self, lgc_adjoint, method=''):
@@ -43,17 +46,21 @@ class OperatorComp(Operator):
         Returns a string used to evaluate the operator composition multiplication.
         """
         str_adjoint = ''
+        
         if lgc_adjoint:
-            self.ls_ops.reverse()
+            order_iterator = xrange(len(self.ls_ops))
             str_adjoint = '~'
-        str_eval = ''.join([str_adjoint + 'self.ls_ops[' + str(i) + ']' + method + \
-                            ' * ' for i in arange(len(self.ls_ops))])
+        else:
+            order_iterator = xrange(len(self.ls_ops)-1,-1,-1)    
+        str_eval = ''.join(['(' +str_adjoint + 'self.ls_ops[' + str(i) + ']' + method + \
+                            ' * ' for i in order_iterator])
         if method == '': #assume we want to multiply
             str_eval += 'multiplicand'               
-        if lgc_adjoint: #reverse it back to the way it was
-            self.ls_ops.reverse()
+        else: #remove the last ' * '
+            str_eval = str_eval[:-3]    
+        str_eval += ')'*len(self.ls_ops)
         return str_eval
-    
+
     def get_spectrum(self):
         """
         Get the spectrum of the composite (by element-wise multiplying their respective spectra)
@@ -72,4 +79,5 @@ class OperatorComp(Operator):
             val = self.ls_ops[0].get_psd()
         else:
             val = eval(self.str_eval_f)
+            val = real(conj(val) * val)
         return val            

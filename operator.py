@@ -11,6 +11,7 @@ class Operator(Section):
         Class constructor for Operator.
         """       
         super(Operator,self).__init__(ps_parameters,str_section)
+        self.output_fourier = 0
         self.lgc_adjoint = 0
         
     def __invert__(self):
@@ -27,6 +28,12 @@ class Operator(Section):
         """             
         self.__invert__
         return self
+
+    def set_output_fourier(self,val):
+        """
+        Force the output to be fourier samples
+        """
+        self.output_fourier = val
     
     def __mul__(self,multiplicand):
         """

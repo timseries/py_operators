@@ -1,6 +1,6 @@
 #!/usr/bin/python -tt
 import numpy as np
-from numpy import array
+from numpy import array, zeros, conj
 from numpy import arange as ar
 
 from py_operators.operator import Operator
@@ -12,158 +12,51 @@ class Downsample(Operator):
     using sparse matrices of logical indexes.
 
     Attributes:
-      str_type (str): uniform, cylindrical, gaussian, pyramid
-      spatial (int): 1 to do a convolution with spatial filters.
-      output_fourier (int): 1 to ouput Fourier coefficients.
-      gaussian_sigma (float): stdev of gaussian blur.
-      lgc_even_fft (itn): 1 to use even-length FFT and pad psf.
-      ary_sz (ndarray): the spatial support of the kernel.
-      kernel (ndarray): the kernel 'image'.
-      int_dimension (int): the dimension of the operator.
-      for_kernel_f (ndarray): the Fourier forward blur.
-      for_sz_max (ndarray): the max of kernel and input dimensions.
-      size_min (ndarray): the min of kernel and input dimensions.
-      fft_sz (ndarray): the size argument of fftn.
-      for_mcand_sz (ndarray): multiplcand dimensions forward blur.
-      adj_mcand_sz (ndarray): multiplcand dimensions adjoint blur.
+      ds_factor (ndarray): an 1d array, each element is the sampling factor.
+      for_mcand_sz (ndarray): size of the original input signal...used to determine
+      correct upsampled size.
     """
-    
+
     def __init__(self,ps_parameters,str_section):
         """
         Class constructor for Downsample. 
         """
         super(Downsample,self).__init__(ps_parameters,str_section)
-        self.str_type = self.get_val('type',False)
-        self.spatial = self.get_val('spatial',True)
-        self.output_fourier = self.get_val('outputfourier',True)
-        self.gaussian_sigma = self.get_val('gaussiansigma',True)
-        self.lgc_even_fft = self.get_val('evenfft',True)
-        self.ary_sz = None
-        self.create_kernel()
-        self.int_dimension = len(self.ary_sz)
-        self.for_kernel_f = None
-        self.for_sz_max = None
-        self.size_min = None
-        self.fft_sz = None
+        self.ds_factor = self.get_val('downsamplefactor',True)
+        self.offset = self.get_val('offset',True)
+        if self.offset.__class__.__name__ != 'ndarray':
+            self.offset = np.zeros(self.ds_factor.size,)
         self.for_mcand_sz = None
-        self.adj_mcand_sz = None
-        
+        self.tup_slices=tuple([slice(self.offset[i],None,self.ds_factor[i]) 
+                                     for i in xrange(self.ds_factor.size)])
     def __mul__(self,ary_mcand):
         """
         Check superclass.
         """
-                                                                                
-        if self.spatial:
-            ValueError('spatial domain blurring not supported')
         if not self.lgc_adjoint:
-            #set up the Fourier blur kernel once for this mcand size
-            if ary_mcand.shape != self.for_mcand_sz:
+            #set up the downsampling slices
+            if self.for_mcand_sz == None:
                 self.for_mcand_sz = ary_mcand.shape
-                if self.lgc_even_fft:
-                    self.for_sz_max = max(self.kernel.shape,ary_mcand.shape)
-                    self.for_sz_min = min(self.kernel.shape,ary_mcand.shape)
-                    self.for_fft_sz = (self.for_sz_max + 
-                                         np.mod(self.for_sz_max,2))
-                    self.for_kernel_f = self.kernel
-                else:
-                    self.for_kernel_f = np.zeros(ary_mcand.shape)
-                    self.for_sz_max = self.for_kernel_f.shape
-                    self.for_sz_min = self.for_kernel_f.shape
-                    self.for_fft_sz = self.for_kernel_f.shape
-                    c_i = tuple([list(ar(self.ary_sz[i])) 
-                                 for i in ar(self.int_dimension)])
-                    #embed and circularly shift by half the support
-                    c_i = eval('np.ix_' + str(c_i))
-                    self.for_kernel_f[c_i] = self.kernel
-                    self.for_kernel_f = circshift(self.for_kernel_f,
-                                                  tuple((-self.ary_sz/2.0).astype('uint16')))
-                    #take the fft, with the correct size
-                self.for_kernel_f = fftn(self.for_kernel_f,
-                                         s=self.for_fft_sz)
-            ary_mcand = self.for_kernel_f * fftn(ary_mcand,
-                                                 s=self.for_fft_sz)
-            if not self.output_fourier and not self.lgc_even_fft:
-                ary_mcand = np.real(ifftn(ary_mcand))
-            if self.lgc_even_fft: #we must unpad first
-                ary_mcand = np.real(ifftn(ary_mcand)) 
-                ary_mcand = ary_mcand[colonvec(self.for_sz_min,
-                                               self.for_sz_max)]
-                if self.output_fourier:
-                    ary_mcand = fftn(ary_mcand)
+            ary_mcand = ary_mcand[self.tup_slices]
         else: #adjoint
-            if ary_mcand.shape != self.adj_mcand_sz:
-                self.adj_mcand_sz = ary_mcand.shape #L
-                if self.lgc_even_fft:
-                    self.adj_sz_min = min(array(self.adj_mcand_sz)+
-                                            array(self.kernel.shape)-1,
-                                            2*array(self.adj_mcand_sz)
-                                            -1)
-                    self.adj_fft_sz = (self.adj_sz_min + 
-                                         np.mod(self.adj_sz_min,2))
-                    self.adj_kernel_f = conj(fftn(self.kernel,s=self.adj_fft_sz))
-                else:
-                    self.adj_sz_min = self.for_kernel_f.shape
-                    self.adj_fft_sz = self.for_kernel_f.shape
-                    self.adj_kernel_f = conj(self.for_kernel_f)
-            if self.lgc_even_fft: #pad first
-                ary_result_temp = np.zeros(self.adj_sz_min)
-                unpad_slices = colonvec(array(self.adj_sz_min)-
-                                        array(self.adj_mcand_sz)+1,
-                                        array(self.adj_sz_min))
-                ary_result_temp[unpad_slices] = ary_mcand
-                ary_mcand = ary_result_temp
-            ary_mcand = self.adj_kernel_f * fftn(ary_mcand,s=self.adj_fft_sz)
-            if not self.output_fourier and not self.lgc_even_fft:
-                ary_mcand = np.real(ifftn(ary_mcand))
-            if self.lgc_even_fft: #unpad in spatial domain
-                ary_mcand = np.real(ifftn(ary_mcand))
-                unpad_slices = colonvec(np.ones(self.int_dimension,),
-                                        array(self.adj_sz_min)-
-                                        max(array(self.kernel.shape)-
-                                            array(self.adj_mcand_sz),0))
-                ary_mcand = ary_mcand[unpad_slices]
-                if self.output_fourier:
-                    ary_mcand = fftn(ary_mcand)
-                        
+            ary_mcand_temp = zeros(self.for_mcand_sz)
+            # print ary_mcand_temp.shape
+            ary_mcand_temp[self.tup_slices] = ary_mcand
+            ary_mcand = ary_mcand_temp
         return super(Downsample,self).__mul__(ary_mcand)
-
-    def create_kernel(self):
-        """Creates or reads from file the kernel weights and stores
-        in the class kernel attribute.
-        """
-        if self.str_type!='file':
-            self.ary_sz = self.get_val('size',True)
-            ary_kernel = np.zeros(self.ary_sz)
-        if self.str_type =='uniform':
-            ary_kernel[:] = 1.0 / np.prod(self.ary_sz)
-        elif self.str_type =='gaussian':
-            ary_impulse = nd_impulse(self.ary_sz)
-            gaussian_filter(ary_impulse,self.gaussian_sigma,
-                            0,output=ary_kernel)
-            ary_kernel = gaussian(self.ary_sz,self.gaussian_sigma)
-        elif self.str_type =='hamming':
-            ary_kernel = np.hamming(self.ary_sz[0])
-        elif self.str_type=='file':    
-            sec_input = sf.create_section(self.ps_parameters,
-                                          self.get_val('filesection',False))
-            ary_kernel = sec_input.read({},True)
-            self.ary_sz = array(ary_kernel.shape)
-        else:
-            ValueError("no such kernel "+self.str_type+" supported")
-        self.kernel=ary_kernel
 
     def get_spectrum(self):
         """Return the spectrum.
         """
         if self.lgc_adjoint:
-            return self.adj_kernel_f
+            return 1
         else:
-            return self.for_kernel_f    
+            return 1
 
     def get_spectrum_sq(self):
         """Return the squared magnitude of the spectrum.
         """
-        return conj(self.for_kernel_f)*self.for_kernel_f
+        return 1
     
     class Factory:
         def create(self,ps_parameters,str_section):
