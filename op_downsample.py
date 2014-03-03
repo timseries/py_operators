@@ -28,7 +28,7 @@ class Downsample(Operator):
             self.offset = np.zeros(self.ds_factor.size,)
         self.for_mcand_sz = None
         self.tup_slices=tuple([slice(self.offset[i],None,self.ds_factor[i]) 
-                                     for i in xrange(self.ds_factor.size)])
+                               for i in xrange(self.ds_factor.size)])
     def __mul__(self,ary_mcand):
         """
         Check superclass.
