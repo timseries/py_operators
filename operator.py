@@ -26,7 +26,7 @@ class Operator(Section):
         """
         Also performs the operator adjoint/Hermetian transpose.
         """             
-        self.__invert__
+        self.__invert__()
         return self
 
     def set_output_fourier(self,val):
