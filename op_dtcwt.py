@@ -25,7 +25,6 @@ class DTCWT(Operator):
         self.qshift = self.get_val('qshift',False)
         self.ext_mode = max(self.get_val('ext_mode',True),4)
         self.discard_level_1 = self.get_val('discard_level_1',True)
-        self.open_cl = self.get_val('opencl',True)
         if self.open_cl:
             from dtcwt.opencl import Transform2d, Transform3d
             Transform1d = None #this has nae been implemented yet

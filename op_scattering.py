@@ -4,8 +4,8 @@ import numpy as np
 from dtcwt.numpy.common import Pyramid
 
 from py_utils.signal_utilities import ws as ws
+from py_utils.section_factory import SectionFactory as sf
 from py_operators.operator import Operator
-
 
 class Scattering(Operator):
     """
@@ -18,20 +18,8 @@ class Scattering(Operator):
         Class constructor for Scattering
         """
         super(Scattering,self).__init__(ps_parameters,str_section)
-        self.include_scale = self.get_val('includescale',True)
-        self.nlevels =  self.get_val('nlevels',True)
-        self.biort = self.get_val('biort',False)
-        self.qshift = self.get_val('qshift',False)
-        self.ext_mode = max(self.get_val('ext_mode',True),4)
-        self.discard_level_1 = self.get_val('discard_level_1',True
-        self.open_cl = self.get_val('opencl',True)
-        if self.open_cl:
-            from dtcwt.opencl import Transform2d, Transform3d
-            Transform1d = None #this has nae been implemented yet
-        else:    
-            from dtcwt.numpy import Transform1d,Transform2d,Transform3d
-        self.transforms = [Transform1d,Transform2d,Transform3d]
-        self.transform = None
+        self.W = sf.create_section(ps_params,self.get_val('transform',False))
+        
         
     def __mul__(self,multiplicand):
         """
