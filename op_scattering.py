@@ -13,13 +13,20 @@ class Scattering(Operator):
     Returns a WS object (forward), or a numpy array (inverse)
     """
     
-    def __init__(self,ps_parameters,str_section):
+    def __init__(self,ps_params,str_section):
         """
         Class constructor for Scattering
         """
-        super(Scattering,self).__init__(ps_parameters,str_section)
-        self.W = sf.create_section(ps_params,self.get_val('transform',False))
-        
+        super(Scattering,self).__init__(ps_params,str_section)
+        self.depth = self.get_val('depth',False)
+        self.transform_sec = self.get_val('transform',False)
+        self.W = sf.create_section(ps_params,self.transform_sec)
+        #create the versions of W we'll need in a list
+        self.max_transform_levels = self.W.get_val('nlevels')
+        self.W = []
+        for j in xrange(self.max_transform_levels+1,0,-1):
+            ps_params.set_key_val_pairs(self.transform_sec,['nlevels'],[j])
+            self.W.append(sf.create_section(ps_params,self.transform_sec))
         
     def __mul__(self,multiplicand):
         """
@@ -27,19 +34,13 @@ class Scattering(Operator):
         forward: a numpy array
         adjoint: a wavelet transform object (WS).}
         """        
+        W = self.W
         if not self.lgc_adjoint:
-            int_dimension = multiplicand.ndim
-            if self.transform == None:
-                if int_dimension == 3:
-                    self.transform = self.transforms[2](biort=self.biort, qshift=self.qshift, \
-                                                        ext_mode=self.ext_mode, \
-                                                        discard_level_1=self.discard_level_1)
-                else:
-                    self.transform = self.transforms[int_dimension-1](biort = self.biort, qshift = self.qshift)
-            td_signal = self.transform.forward(multiplicand, self.nlevels, self.include_scale)
-            multiplicand = ws.WS(td_signal.lowpass,td_signal.highpasses,td_signal.scales)
+            print 'inverse scattering not implemented yet'
         else:#adjoint, multiplicand should be a WS object
-            multiplicand = self.transform.inverse(Pyramid(multiplicand.ary_lowpass,multiplicand.tup_coeffs))
+            for j in xrange(self.depth):
+                W[j]*multiplicand
+                
         return super(Scattering,self).__mul__(multiplicand)
 
     class Factory:
