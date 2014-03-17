@@ -3,7 +3,7 @@ import numpy as np
 
 from dtcwt.numpy.common import Pyramid
 
-from py_utils.signal_utilities import ws as ws
+from py_utils.signal_utilities import ws as ws, Scat
 from py_utils.section_factory import SectionFactory as sf
 from py_operators.operator import Operator
 
@@ -32,14 +32,30 @@ class Scattering(Operator):
         """
         Overloading the * operator. multiplicand is{
         forward: a numpy array
-        adjoint: a wavelet transform object (WS).}
+        adjoint: a scattering object.}
         """        
         W = self.W
         if not self.lgc_adjoint:
-            print 'inverse scattering not implemented yet'
+            #inital wavelet transform
+            wstemp.int_subbands
+            for m in xrange(self.depth):
+                if m==0:
+                    wstemp = [W[0]*multiplicand]
+                    S = Scat(wstemp[0].ary_lowpass)
+                elif m==self.depth-1:    
+                    
+                else:    
+                    for j in xrange(len(wstemp)):
+                        wstemp_mod = wstemp[j].modulus()
+                        wstemp_next = []
+                        for s in xrange(1,wstemp_mod.int_subbands-wstemp_mod.int_orientations):
+                            w_index = m + (s-1)/wstemp_mod.int_orientations
+                            wstemp_next.append(W[w_index]*wstemp_mod.get_subband(s))
+                            S.store(wstemp_next[-1].ary_lowpass,m,s,j)
+                    wstemp = wstemp_next
+                    
         else:#adjoint, multiplicand should be a WS object
-            for j in xrange(self.depth):
-                W[j]*multiplicand
+            print 'inverse scattering not implemented yet'
                 
         return super(Scattering,self).__mul__(multiplicand)
 
