@@ -37,21 +37,25 @@ class Scattering(Operator):
         W = self.W
         if not self.lgc_adjoint:
             #inital wavelet transform
-            wstemp.int_subbands
-            for m in xrange(self.depth):
-                if m==0:
+            for level in xrange(self.depth):
+                if level==0:
                     wstemp = [W[0]*multiplicand]
-                    S = Scat(wstemp[0].ary_lowpass)
-                elif m==self.depth-1:    
+                    S = Scat(wstemp[0].ary_lowpass,wstemp[0].int_level,self.depth)
+                    S.store(wstemp[0].ary_lowpass,subband_list)
+                elif level==self.depth-1:    
                     
-                else:    
-                    for j in xrange(len(wstemp)):
+                else:
+                    for parent_index in xrange(len(wstemp)):
                         wstemp_mod = wstemp[j].modulus()
                         wstemp_next = []
-                        for s in xrange(1,wstemp_mod.int_subbands-wstemp_mod.int_orientations):
-                            w_index = m + (s-1)/wstemp_mod.int_orientations
-                            wstemp_next.append(W[w_index]*wstemp_mod.get_subband(s))
-                            S.store(wstemp_next[-1].ary_lowpass,m,s,j)
+                        for child in xrange(1,wstemp_mod.int_subbands):
+                            if child <= wstemp_mod.int_subbands-wstemp_mod.int_orientations:
+                                w_index = level + (child-1)/wstemp_mod.int_orientations
+                                wstemp_next.append(W[w_index]*wstemp_mod.get_subband(child))
+                                S.store(wstemp_next[-1].ary_lowpass,subband_list)
+                            else:
+                                S.store(upsample(wstemp_mod.get_subband(child)),level)    
+                            subband_list[level] = 
                     wstemp = wstemp_next
                     
         else:#adjoint, multiplicand should be a WS object
