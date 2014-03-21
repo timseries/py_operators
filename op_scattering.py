@@ -39,22 +39,23 @@ class Scattering(Operator):
             #inital wavelet transform
             for level in xrange(self.depth):
                 if level==0:
-                    wstemp = [W[0]*multiplicand]
-                    S = Scat(wstemp[0].ary_lowpass,wstemp[0].int_level,self.depth)
-                    S.store(wstemp[0].ary_lowpass,subband_list)
+                    wstemp = [Node(W[0]*multiplicand)]
+                    S = Scat(wstemp[0],wstemp[0].int_level,self.depth)
+                    int_orientations = wstemp[0].int_orientations
                 elif level==self.depth-1:    
                     
                 else:
                     for parent_index in xrange(len(wstemp)):
-                        wstemp_mod = wstemp[j].modulus()
+                        wstemp_mod = wstemp[parent_index].modulus()
                         wstemp_next = []
                         for child in xrange(1,wstemp_mod.int_subbands):
+                            subband_label = np.mod(child-1,int_orientations)+1
                             if child <= wstemp_mod.int_subbands-wstemp_mod.int_orientations:
-                                w_index = level + (child-1)/wstemp_mod.int_orientations
-                                wstemp_next.append(W[w_index]*wstemp_mod.get_subband(child))
-                                S.store(wstemp_next[-1].ary_lowpass,subband_list)
+                                w_index = level + (child-1)/int_orientations
+                                wstemp_next.append(Node(W[w_index]*wstemp_mod.get_subband(child)))
+                                S.store(wstemp_next[-1].get_subband(child),wstemp[parent_index],child)
                             else:
-                                S.store(upsample(wstemp_mod.get_subband(child)),level)    
+                                S.store(upsample(wstemp_mod.get_subband(child)),child)    
                             subband_list[level] = 
                     wstemp = wstemp_next
                     
