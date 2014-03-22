@@ -39,25 +39,31 @@ class Scattering(Operator):
             #inital wavelet transform
             for level in xrange(self.depth):
                 if level==0:
-                    wstemp = [Node(W[0]*multiplicand)]
-                    S = Scat(wstemp[0],wstemp[0].int_level,self.depth)
-                    int_orientations = wstemp[0].int_orientations
-                elif level==self.depth-1:    
-                    
+                    parent_nodes = [Node(W[0]*multiplicand)]
+                    S = Scat(parent_nodes[0],parent_nodes[0].int_level,self.depth)
+                    int_orientations = parent_nodes[0].int_orientations
                 else:
-                    for parent_index in xrange(len(wstemp)):
-                        wstemp_mod = wstemp[parent_index].modulus()
-                        wstemp_next = []
-                        for child in xrange(1,wstemp_mod.int_subbands):
-                            subband_label = np.mod(child-1,int_orientations)+1
-                            if child <= wstemp_mod.int_subbands-wstemp_mod.int_orientations:
-                                w_index = level + (child-1)/int_orientations
-                                wstemp_next.append(Node(W[w_index]*wstemp_mod.get_subband(child)))
-                                S.store(wstemp_next[-1].get_subband(child),wstemp[parent_index],child)
+                    parent_nodes_next = []
+                    for parent_node in parent_nodes:
+                        #generate nodes at this level for each parent
+                        parent_mod = parent_node.modulus()
+                        child_nodes = []
+                        for subband_index in xrange(1,parent_mod.int_subbands):
+                            # subband_label = np.mod(child-1,int_orientations)+1
+                            num_levels = parent_mod.int_levels
+                            if subband_index <= wstemp_mod.int_subbands-wstemp_mod.int_orientations:
+                                w_index = num_levels-subband_index/int_orientations
+                                parent_nodes_next.append(Node(W[w_index]*parent_mod.get_subband(subband_index)))
+                                child_nodes.append(parent_nodes_next[-1])
                             else:
-                                S.store(upsample(wstemp_mod.get_subband(child)),child)    
-                            subband_list[level] = 
-                    wstemp = wstemp_next
+                                child_nodes.append(Node(upsample(wstemp_mod.get_subband(child))))
+                        #we've generated all of the nodes for parent_node_mod now, we can delete
+                        #parent_node_mod's ws object and move on to the next one
+                        parent_node.data = deepcopy(parent_mod.ary_scaling)
+                        del parent_mod
+                        parent_node.children = child_nodes
+                        parent_node.delete_wrapped_instance()
+                    parent_nodes = parent_nodes_next
                     
         else:#adjoint, multiplicand should be a WS object
             print 'inverse scattering not implemented yet'
