@@ -44,7 +44,7 @@ class Scattering(Operator):
         W = self.W
         if not self.lgc_adjoint:
             #inital wavelet transform
-            for level in xrange(self.depth):
+            for level in xrange(self.depth+1):
                 if level==0:
                     parent_nodes = [Node(W[-1]*multiplicand)]
                     root_node = parent_nodes[-1]
@@ -52,23 +52,25 @@ class Scattering(Operator):
                 else:
                     parent_nodes_next = []
                     for parent_node in parent_nodes:
-                        #generate nodes at this level for each parent
+                        #generate the modulus for the previous level
                         parent_mod = parent_node.modulus()
-                        child_nodes = []
-                        for subband_index in xrange(1,parent_mod.int_subbands):
-                            num_levels = parent_mod.int_levels
-                            if subband_index < parent_mod.int_subbands-parent_mod.int_orientations:
-                                w_index = num_levels-(subband_index-1)/int_orientations-2
-                                parent_nodes_next.append(Node(W[w_index]*parent_mod.get_subband(subband_index)))
-                                child_nodes.append(parent_nodes_next[-1])
-                            else:
-                                child_nodes.append(Node(object))
-                                child_nodes[-1].set_data(upsample(parent_mod.get_subband(subband_index)))
+                        #only propagate if we're before the scattering transform depth
+                        if level<self.depth:
+                            child_nodes = []
+                            for subband_index in xrange(1,parent_mod.int_subbands):
+                                num_levels = parent_mod.int_levels
+                                if subband_index < parent_mod.int_subbands-parent_mod.int_orientations:
+                                    w_index = num_levels-(subband_index-1)/int_orientations-2
+                                    parent_nodes_next.append(Node(W[w_index]*parent_mod.get_subband(subband_index)))
+                                    child_nodes.append(parent_nodes_next[-1])
+                                else:
+                                    child_nodes.append(Node(object))
+                                    child_nodes[-1].set_data(upsample(parent_mod.get_subband(subband_index)))
+                            parent_node.set_children(child_nodes) #end propagation block
                         #we've generated all of the nodes for parent_node_mod now, we can delete
                         #parent_node_mod's ws object and move on to the next one
                         parent_node.set_data(deepcopy(parent_mod.ary_lowpass))
                         del parent_mod
-                        parent_node.set_children(child_nodes)
                         parent_node.delete_wrapped_instance()
                     parent_nodes = parent_nodes_next
             multiplicand = root_node        
