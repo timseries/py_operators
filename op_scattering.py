@@ -10,8 +10,6 @@ from py_utils.section_factory import SectionFactory as sf
 from py_utils.node import Node
 from py_operators.operator import Operator
 
-import pdb
-
 class Scattering(Operator):
     """
     Operator which performs the forward/inverse(~) Scattering transform attributed to Mallat.
@@ -67,13 +65,12 @@ class Scattering(Operator):
                                     child_nodes.append(Node(object))
                                     child_nodes[-1].set_data(upsample(parent_mod.get_subband(subband_index)))
                             parent_node.set_children(child_nodes) #end propagation block
-                        #we've generated all of the nodes for parent_node_mod now, we can delete
-                        #parent_node_mod's ws object and move on to the next one
+                            #assign the parent's data to the lowpass layer
                         parent_node.set_data(deepcopy(parent_mod.ary_lowpass))
                         del parent_mod
                         parent_node.delete_wrapped_instance()
                     parent_nodes = parent_nodes_next
-            multiplicand = root_node        
+            multiplicand = Scat(root_node,int_orientations,self.max_transform_levels,self.depth)
         else:#adjoint, multiplicand should be a WS object
             print 'inverse scattering not implemented yet'
         return super(Scattering,self).__mul__(multiplicand)
