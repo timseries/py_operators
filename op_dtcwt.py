@@ -26,8 +26,9 @@ class DTCWT(Operator):
         self.ext_mode = max(self.get_val('ext_mode',True),4)
         self.discard_level_1 = self.get_val('discard_level_1',True)
         if self.open_cl:
-            from dtcwt.opencl import Transform2d, Transform3d
+            from dtcwt.opencl import Transform2d
             Transform1d = None #this has nae been implemented yet
+            Transform3d = None #this has nae been implemented yet
         else:    
             from dtcwt.numpy import Transform1d,Transform2d,Transform3d
         self.transforms = [Transform1d,Transform2d,Transform3d]

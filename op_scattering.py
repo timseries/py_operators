@@ -4,7 +4,7 @@ from copy import deepcopy
 
 from dtcwt.numpy.common import Pyramid
 
-from py_utils.signal_utilities import ws as ws
+from py_utils.signal_utilities.scat import Scat
 from py_utils.signal_utilities.sig_utils import upsample
 from py_utils.section_factory import SectionFactory as sf
 from py_utils.node import Node
@@ -27,7 +27,7 @@ class Scattering(Operator):
         self.max_transform_levels = self.W.nlevels
         if self.depth > self.max_transform_levels:
             ValueError('cannot have more scattering transform laters than wavelet transform scales')
-        #create the versions of W we'll need in a list
+        #create the versions of W we'll need in a list, increasing the number of scales at each index
         self.W = []
         for J in xrange(1,self.max_transform_levels+1):
             ps_params.set_key_val_pairs(self.transform_sec,['nlevels'],[J])
