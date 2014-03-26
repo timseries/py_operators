@@ -69,7 +69,7 @@ class Blur(Operator):
         """
                                                                                 
         if self.spatial:
-            ValueError('spatial domain blurring not supported')
+            raise ValueError('spatial domain blurring not supported')
         if not self.lgc_adjoint:
             #set up the Fourier blur kernel once for this mcand size
             if ary_mcand.shape != self.for_mcand_sz:
@@ -164,7 +164,7 @@ class Blur(Operator):
             ary_kernel = sec_input.read({},True)
             self.ary_sz = array(ary_kernel.shape)
         else:
-            ValueError("no such kernel "+self.str_type+" supported")
+            raise ValueError("no such kernel "+self.str_type+" supported")
         self.kernel=ary_kernel
 
     def get_spectrum(self):
