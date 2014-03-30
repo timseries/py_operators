@@ -45,6 +45,8 @@ class Scattering(Operator):
             for level in xrange(self.depth+1):
                 if level==0:
                     parent_nodes = [Node(W[-1]*multiplicand)]
+                    parent_nodes[-1].path=[0]
+                    parent_nodes[-1].scale=self.max_transform_levels
                     root_node = parent_nodes[-1]
                     int_orientations = parent_nodes[0].int_orientations
                 else:
@@ -62,12 +64,18 @@ class Scattering(Operator):
                                     parent_nodes_next.append(Node(W[w_index]*parent_mod.get_subband(subband_index)))
                                     child_nodes.append(parent_nodes_next[-1])
                                 else:
+                                    w_index=-1
                                     child_nodes.append(Node(object))
                                     child_nodes[-1].set_data(upsample(parent_mod.get_subband(subband_index)))
+                                #set the child node path and scale    
+                                child_nodes[-1].set_path(parent_node.path+[(len(child_nodes))])
+                                child_nodes[-1].set_scale(self.max_transform_levels-w_index-1)
                             parent_node.set_children(child_nodes) #end propagation block
-                            #assign the parent's data to the lowpass layer
+                        #assign the parent's data to the lowpass layer
                         parent_node.set_data(deepcopy(parent_mod.ary_lowpass))
+                        #remove the parent wavelet transform modulus object to save space
                         del parent_mod
+                        #remove the parent wavelet transform object to save space
                         parent_node.delete_wrapped_instance()
                     parent_nodes = parent_nodes_next
             multiplicand = Scat(root_node,int_orientations,self.max_transform_levels,self.depth)
