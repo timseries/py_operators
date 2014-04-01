@@ -26,7 +26,7 @@ class Scattering(Operator):
         self.W = sf.create_section(ps_params,self.transform_sec)
         self.max_transform_levels = self.W.nlevels
         if self.depth > self.max_transform_levels:
-            raise ValueError('cannot have more scattering transform laters than wavelet transform scales')
+            raise ValueError('cannot have more scattering transform layers than wavelet transform scales')
         #create the versions of W we'll need in a list, increasing the number of scales at each index
         self.W = []
         for J in xrange(1,self.max_transform_levels+1):
