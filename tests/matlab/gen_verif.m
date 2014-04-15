@@ -1,24 +1,22 @@
-%% Generate verification arrays to compare known good DT-CWT inputs and outputs.
-%%
-%% This script assumes that Nick Kingsbury's DT-CWT toolbox has been installed.
+%% Generate verification arrays to compare known good operator inputs and output
 %%
 %% Run with something like:
 %%
 %% $ /path/to/matlab -nosplash -nodesktop -r "run /path/to/gen_verif; quit"
 %%
-%% There should be the DTCWT toolboxes installed in a toolboxes directory next
-%% to the script. See the regen_verification.sh script for an example of setting
-%% this up.
 
-% Add the qbgn and toolbox files to the path
-strFilePath=[fileparts(which(mfilename('fullpath'))) '../../dtcwt/matlab/'];
-addpath([strFilePath 'qbgn/']);
+% Add the qbgn and toolbox files to the path, and any other matlab benchmarking code
+strFilePath=[fileparts(which(mfilename('fullpath'))) '/'];
+addpath([strFilePath '/3d_implicit_conv/']);
+addpath([strFilePath '../../dtcwt/matlab/']);
+addpath([strFilePath '../../dtcwt/matlab/qbgn/']);
 addpath(genpath([strFilePath 'toolboxes/']));
 
 %% Load Lena image and generate the quantized bandlimited gaussian noise (qbgn) phantom
 inputs = load('lena.mat');
 lena = inputs.lena;
 qbgn = uint8(gen_qbgn(128,128));
+cell_image = imreadstack([strFilePath '3d_implicit_conv/phantom_padded.tif']);
 
 %% Generate the blur kernels in the spatial domain, 2D
 blur_types={'uniform','gaussian'}; %it is important to keep this ordering in sync with python...
@@ -40,15 +38,30 @@ for i = 1:length(blur_types)
     H_f(Ny/2+1-L:Ny/2+1+L,Nx/2+1-L:Nx/2+1+L) = blur_kernel;
     blur_kernel_f{i} = fftn(fftshift(H_f));
 end
+
+%% Generate blur kernels in the spatial domain from files, 3D
+blur_types_3D_file={[strFilePath '/3d_implicit_conv/psf.tif']};
+cell_blur_3D=cell(length(blur_types_3D_file),1);
+blur_kernel_3D=cell(length(blur_types_3D_file),1);
+for i = 1:length(blur_types_3D_file)
+    blur_kernel_3D{i}=imreadstack(blur_types_3D_file{i});
+end
+
+%%%%Generate Verfication Data%%%%%
+
 %% Perform the ffts for verification
 
 lena_fft = fftn(lena);
 qbgn_fft = fftn(double(qbgn));
-
 
 %% Perform blur in the Fourier domain and store in cell array
 for i = 1:length(blur_types)
     lena_blur_2D{i} = blur_f(blur_kernel_f{i},lena_fft);
 end    
 
-save('verification.mat', 'lena_fft', 'qbgn_fft', 'lena_blur_2D');
+%% Perform blur in the Fourier domain and store in cell array, 3D files
+for i = 1:length(blur_types_3D_file)
+    cell_blur_3D{i} = Direct(blur_kernel_3D{i},cell_image);
+end    
+
+save('verification.mat', 'lena_fft', 'qbgn_fft', 'lena_blur_2D', 'cell_blur_3D');

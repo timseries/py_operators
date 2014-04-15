@@ -6,6 +6,7 @@ import numpy as np
 
 from py_operators.op_blur import Blur
 from py_utils.parameter_struct import ParameterStruct
+from py_utils.section_factory import SectionFactory as sf 
 
 from util import assert_almost_equal, summarise_mat, summarise_cube
 from util import assert_percentile_almost_equal, assert_almost_equal
@@ -61,6 +62,9 @@ def setup():
 
     global ps_params
     ps_params = ParameterStruct('testparameters.ini')
+
+    global cell_image
+    cell_image = sf.create_section(ps_params,'Input1').read({},True)
     
 def test_lena_loaded():
     assert lena.shape == (512, 512)
@@ -78,15 +82,11 @@ def test_blur_2D():
         H = Blur(ps_params,str_blur)
         assert_almost_equal(H * lena, verif['lena_blur_2D_{0}'.format(idx)], tolerance=TOLERANCE)
 
-# def test_transform3d_numpy():
-#     transform = Transform3d(biort='near_sym_b',qshift='qshift_b')
-#     td_signal = transform.forward(qbgn, nlevels=3, include_scale=True, discard_level_1=False)
-#     Yl, Yh, Yscale = td_signal.lowpass, td_signal.highpasses, td_signal.scales
-#     assert_almost_equal_to_summary_cube(Yl, verif['qbgn_Yl'], tolerance=TOLERANCE)
-#     for idx, a in enumerate(Yh):
-#         assert_almost_equal_to_summary_cube(a, verif['qbgn_Yh_{0}'.format(idx)], tolerance=TOLERANCE)
+def test_deconv_challenge_blur_3D():
+    #test the blurring of the deconvolution challenge psf
+    ls_blurs=['Modality1_3']
 
-#     for idx, a in enumerate(Yscale):
-#         assert_almost_equal_to_summary_cube(a, verif['qbgn_Yscale_{0}'.format(idx)], tolerance=TOLERANCE)
-
+    for idx, str_blur in enumerate(ls_blurs):
+        H = Blur(ps_params,str_blur)
+        assert_almost_equal(H * cell_image, verif['cell_blur_3D_{0}'.format(idx)], tolerance=TOLERANCE)
 # vim:sw=4:sts=4:et
