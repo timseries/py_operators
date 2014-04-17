@@ -11,8 +11,6 @@ from py_operators.operator import Operator
 from py_utils.section_factory import SectionFactory as sf
 from py_utils.signal_utilities.sig_utils import nd_impulse, circshift, colonvec, gaussian
 
-import pdb
-
 class Blur(Operator):
     """
     Operator which performs a blur in either the spatial or Fourier 
@@ -152,9 +150,9 @@ class Blur(Operator):
         if self.str_type =='uniform':
             ary_kernel[:] = 1.0 / np.prod(self.ary_sz)
         elif self.str_type =='gaussian':
-            ary_impulse = nd_impulse(self.ary_sz)
-            gaussian_filter(ary_impulse,self.gaussian_sigma,
-                            0,output=ary_kernel)
+            # ary_impulse = nd_impulse(self.ary_sz)
+            # gaussian_filter(ary_impulse,self.gaussian_sigma,
+            #                 0,output=ary_kernel)
             ary_kernel = gaussian(self.ary_sz,self.gaussian_sigma)
         elif self.str_type =='hamming':
             ary_kernel = np.hamming(self.ary_sz[0])
