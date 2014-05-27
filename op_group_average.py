@@ -47,28 +47,25 @@ class GroupSum(Operator):
                 if self.duplicates!=len(ls_ws_mcand):
                     raise ValueError('there are not enough WS for the replicated variable space')
                 #preallocate the row locations
-            ws_D_temp=WS(np.zeros(ws_mcand.ary_lowpass.shape),
+            ws_A_data=WS(np.zeros(ws_mcand.ary_lowpass.shape),
                          (ws_mcand.one_subband(0)).tup_coeffs)
-            #coarse to fine assignment of cluster size inverses  (lambda_Gk)
-            for s in xrange(ws_D_temp.int_subbands-1,0,-1):
+            ls_ws_A_groups=[WS(np.zeros(ws_mcand.ary_lowpass.shape),
+                               (ws_mcand.one_subband(0)).tup_coeffs) for j in xrange(self.duplicates)]
+            #coarse to fine assignment of group size inverses  (lambda_Gk)
+            #and assignemnt of group numbers
+            for s in xrange(ws_A_data.int_subbands-1,0,-1):
+                ws_A_data.set_subband(s,1.0/self.duplicates)
                 if self.grouptype=='parentchildren':
-                    if (s>ws_D_temp.int_subbands-ws_D_temp.int_orientations) 
-                        or (s<ws_D_temp.int_orientations):
-                        ws_D_temp.set_subband(s,1)
+                    if (s>=ws_A_data.int_subbands-ws_A_data.int_orientations) 
+                        or (s<=ws_A_data.int_orientations):
+                        ws_A_rows.set_subband(s,1.0)
                     else:    
-                        ws_D_temp.set_subband(s,1.0/self.duplicates)
-                if self.grouptype=='parentchild':
-                    if (s>ws_D_temp.int_subbands-ws_D_temp.int_orientations):
-                        ws_D_temp.set_subband(s,1.0/(self.duplicates-1))
-                    elif (s<ws_D_temp.int_orientations):
-                        ws_D_temp.set_subband(s,1.0)
-                    else:    
-                        ws_D_temp.set_subband(s,1.0/self.duplicates)
-            total_size=ws_D_temp.N
-            lowpass_size=ws_D_temp.ary_lowpass.size
-            csr_cols=np.tile(np.arange(0,total_size*self.duplicates),self.duplicates)
-            csr_rows=np.tile(np.arange(0,ws_D_temp.N),self.duplicates)
-            csr_data_template=ws_D_temp.flatten()
+                        ws_A_data.set_subband(s,1.0/self.duplicates)
+            total_size=ws_mcand.N
+            lowpass_size=ws_A_data.ary_lowpass.size
+            csr_cols=np.arange(0,total_size*self.duplicates)
+            csr_rows=np.tile(np.arange(0,total_size),self.duplicates)
+            csr_data_template=ws_A_data.flatten()
             csr_data=np.tile(csr_data_template,self.duplicates)
             self.A=csr_matrix((csr_data,(csr_rows,csr_cols)),shape=(total_size,total_size*self.duplicates))
         if not self.lgc_adjoint:    
@@ -83,11 +80,11 @@ class GroupSum(Operator):
             ary_xhat=np.dot(self.A,ary_xhat)
             
             #return a single ws object (x_bar)
-            ws_D_temp=WS(np.zeros(ws_mcand.ary_lowpass.shape),
+            ws_A_data=WS(np.zeros(ws_mcand.ary_lowpass.shape),
                          (ws_mcand.one_subband(0)).tup_coeffs)
-            ws_D_temp.ws_vector=ary_xhat
-            ws_D_temp.unflatten()
-            return ws_D_temp
+            ws_A_data.ws_vector=ary_xhat
+            ws_A_data.unflatten()
+            return ws_A_data
         else: 
             #flatten a single ws object (should only be one ws obj in the list)
             ary_x=ls_ws_mcand[0].flatten()
@@ -97,11 +94,11 @@ class GroupSum(Operator):
             vec_ix=0
             ls_ws_result=[]
             for j in xrange(self.duplicates):
-                ws_D_temp=WS(np.zeros(ws_mcand.ary_lowpass.shape),
+                ws_A_data=WS(np.zeros(ws_mcand.ary_lowpass.shape),
                              (ws_mcand.one_subband(0)).tup_coeffs)
-                ws_D_temp.ws_vector=ary_x[vec_ix:vec_ix+self.ary_size]
+                ws_A_data.ws_vector=ary_x[vec_ix:vec_ix+self.ary_size]
                 vec_ix+=self.ary_size
-                ls_ws_result.append(ws_D_temp)
+                ls_ws_result.append(ws_A_data)
             return ls_ws_result
         return super(GroupAverage,self).__mul__(ary_mcand)
 
