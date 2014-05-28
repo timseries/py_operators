@@ -2,7 +2,7 @@
 import numpy as np
 from numpy import array, zeros, conj
 from numpy import arange as ar
-from scipy.sparse import csr_matrix
+import cPickle
 
 from py_utils.signal_utilities.ws import WS
 from py_operators.operator import Operator
@@ -60,18 +60,18 @@ class Average(Operator):
                          str(self.L)+'_'+
                          str(self.theta)+'_'+
                          str(self.tup_shape)+'.pkl')
+        self.file_path=None
 
     def load_A(self):
         sec_input=sf.create_section(self.get_params(),self.sparse_matrix_in)
         sec_input.filepath+=self.file_string
-            self.A=sec_input.read({},True)
+        self.file_path=sec_input.filepath
+        self.A=sec_input.read({},True)
         return self.A
     
-    def load_A(self):
-        sec_input=sf.create_section(self.get_params(),self.sparse_matrix_in)
-        sec_input.filepath+=self.file_string
-            self.A=sec_input.read({},True)
-        return self.A
+    def save_A(self):
+        filehandler=open(self.file_path, 'wb')
+        cPickle.dump(self.A,filehandler)
 
     class Factory:
         def create(self,ps_parameters,str_section):
