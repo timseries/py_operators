@@ -20,7 +20,7 @@ class OperatorComp(Operator):
             self.ls_op_names = [self.ls_op_names]
         #build the operator objects            
         self.ls_ops = [sf.create_section(ps_params,self.ls_op_names[i])
-                             for i in arange(len(self.ls_op_names))] 
+                       for i in arange(len(self.ls_op_names))] 
         self.str_eval = self.get_mult_eval(False)  
         self.str_eval_adjoint = self.get_mult_eval(True)    
         self.str_eval_f = self.get_mult_eval(False,'.get_spectrum()')  

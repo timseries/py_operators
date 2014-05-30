@@ -126,6 +126,10 @@ class GroupAverage(Average):
             csr_data=1.0/self.duplicates*np.ones(csr_rows.size,)
             self.A=csr_matrix((csr_data,(csr_rows,csr_cols)),
                               shape=(self.int_size*self.duplicates,self.int_size*self.duplicates))
+            del csr_data
+            del csr_rows
+            del csr_cols
+            del ary_csr_groups
         if 1: #should give the same result for transpose since matrix is symmetric
             #preallocate a vector to store the ws_mcand in
             vec_ix=0
@@ -138,8 +142,8 @@ class GroupAverage(Average):
             ary_xhat=self.A*ary_xhat)
             #return a list of ws objects (size of x_hat)
             ls_result=[WS(np.zeros(ws_mcand.ary_lowpass.shape),
-                             (ws_mcand.one_subband(0)).tup_coeffs)
-                             for int_dup in xrange(self.duplicates)]
+                          (ws_mcand.one_subband(0)).tup_coeffs)
+                          for int_dup in xrange(self.duplicates)]
             vec_ix=0
             for int_dup in xrange(self.duplicates):
                 ls_result[int_dup].ws_vector=ary_xhat[vec_ix:vec_ix+self.int_size]
