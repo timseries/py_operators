@@ -6,7 +6,8 @@ from scipy.sparse import csr_matrix
 
 from py_utils.signal_utilities.ws import WS
 from py_operators.op_average import Average
-from py_utils.section_factory import SectionFactory as sf
+
+import pdb
 
 class GroupAverage(Average):
     """
@@ -32,8 +33,7 @@ class GroupAverage(Average):
         #input is a vector
         if not self.A: #need to construct the group summing mtx
             self.init_A_params(ls_ws_mcand)
-            self.load_A(ls_ws_mcand)
-        if not self.load_A:    
+        if not self.load_A():    
             ws_mcand=ls_ws_mcand[0]
             ws_mcand.flatten()
             #preallocate the row locations
@@ -58,9 +58,9 @@ class GroupAverage(Average):
                     for s in parent_indices:
                         int_s_size=ws_A_groups.get_subband(s).size
                         tup_s_shape=ws_A_groups.get_subband(s).shape
-                        group_indices=ar(int_g_count,int_s_size+1).reshape(tup_s_shape)
+                        group_indices=ar(int_g_count,int_g_count+int_s_size).reshape(tup_s_shape)
                         ws_A_groups.set_subband(s,group_indices)
-                        ws_A_groups.set_subband(s-self.theta,ws_A_groups.get_upsampled_parent(s))
+                        ws_A_groups.set_subband(s-self.theta,ws_A_groups.get_upsampled_parent(s-self.theta))
                         int_g_count+=int_s_size
             elif self.grouptype=='parentchild':
                 #each entry corresponds to a level and is a dict itself
@@ -109,11 +109,12 @@ class GroupAverage(Average):
             #now we can build the sparse matrix rows/cols by iterating
             #through the group numbers
             #first flatten the group numbers
-            ary_csr_groups=np.zeros(self.int_size*self.duplicates,dtype=uint32)
+            ary_csr_groups=np.zeros(self.int_size*self.duplicates,dtype='uint32')
             ix_=0
             for int_dup in xrange(self.duplicates):
                 ary_csr_groups[ix_:ix_+self.int_size]=ls_ws_A_groups[int_dup].flatten()
                 ix_+=self.int_size
+            pdb.set_trace()
             del ls_ws_A_groups    
             #next build the group columns and rows    
             csr_rows=np.zeros(0,)
@@ -139,7 +140,7 @@ class GroupAverage(Average):
                 ary_xhat[vec_ix:vec_ix+self.int_size]=ws_mcand.flatten()
                 vec_ix+=self.int_size
             #now apply the matrix/vector product
-            ary_xhat=self.A*ary_xhat)
+            ary_xhat=self.A*ary_xhat
             #return a list of ws objects (size of x_hat)
             ls_result=[WS(np.zeros(ws_mcand.ary_lowpass.shape),
                           (ws_mcand.one_subband(0)).tup_coeffs)

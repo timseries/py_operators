@@ -6,7 +6,7 @@ from scipy.sparse import csr_matrix
 
 from py_utils.signal_utilities.ws import WS
 from py_operators.operator import Operator
-from py_utils.section_factory import SectionFactory as sf
+from py_operators.op_average import Average
 
 class ClusterAverage(Average):
     """
@@ -62,7 +62,7 @@ class ClusterAverage(Average):
                             
             csr_cols=np.arange(0,self.int_size*self.duplicates)
             csr_rows=np.tile(np.arange(0,self.int_size),self.duplicates)
-            csr_data=np.zeros(self.int_size*self.duplicate)
+            csr_data=np.zeros(self.int_size*self.duplicates)
             vec_ix=0
             for ws_A_data in ls_ws_A_data:
                 csr_data[vec_ix:vec_ix+self.int_size]=ws_A_data.flatten()
