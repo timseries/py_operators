@@ -31,8 +31,9 @@ class ClusterAverage(Average):
         Check superclass.
         """
         #input is a vector
-        if not self.A: #need to construct the cluster summing mtx
+        if self.A==None: #need to construct the cluster summing mtx
             self.init_A_params(ls_ws_mcand)
+        if not self.load_A():    
             ws_mcand=ls_ws_mcand[0]
             ws_mcand.flatten()
             #preallocate the row locations
@@ -69,6 +70,7 @@ class ClusterAverage(Average):
                 vec_ix+=self.int_size
             self.A=csr_matrix((csr_data,(csr_rows,csr_cols)),
                               shape=(self.int_size,self.int_size*self.duplicates))
+            self.save_A()
         if not self.lgc_adjoint:    
             #preallocate a vectore to store the ws_mcand in
             vec_ix=0
@@ -87,7 +89,11 @@ class ClusterAverage(Average):
             ary_mcand=ws_A_data
         else: 
             #flatten a single ws object (should only be one ws obj in the list)
-            ary_x=ls_ws_mcand[0].flatten()
+            if ls_ws_mcand.__class__.__name__=='list':
+                ws_mcand=ls_ws_mcand[0]
+            else:    
+                ws_mcand=ls_ws_mcand
+            ary_x=ws_mcand.flatten()
             #apply the matrix
             ary_x=self.A.transpose()*ary_x
             #create a list of ws objects
@@ -96,7 +102,7 @@ class ClusterAverage(Average):
             for int_dup in xrange(self.duplicates):
                 ws_A_data=WS(np.zeros(ws_mcand.ary_lowpass.shape),
                              (ws_mcand.one_subband(0)).tup_coeffs)
-                ws_A_data.ws_vector=ary_x[vec_ix:vec_ix+self.int_size]
+                ws_A_data.unflatten(ary_x[vec_ix:vec_ix+self.int_size])
                 vec_ix+=self.int_size
                 ls_ws_result.append(ws_A_data)
             ary_mcand=ls_ws_result

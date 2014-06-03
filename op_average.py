@@ -58,7 +58,7 @@ class Average(Operator):
                          self.grouptype+'_'+
                          str(self.L)+'_'+
                          str(self.theta)+'_'+
-                         str(self.tup_shape)+'.pkl')
+                         str(self.tup_shape).replace(' ','') +'.pkl')
         self.file_path=None
 
     def load_A(self):
@@ -66,7 +66,7 @@ class Average(Operator):
         sec_input.filepath+=self.file_string
         self.file_path=sec_input.filepath
         self.A=sec_input.read({},True)
-        return self.A
+        return self.A!=None
     
     def save_A(self):
         if not self.file_path:

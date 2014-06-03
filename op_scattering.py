@@ -41,7 +41,7 @@ class Scattering(Operator):
         """        
         W = self.W
         if not self.lgc_adjoint:
-            #inital wavelet transform
+            #initial wavelet transform
             for level in xrange(self.depth+1):
                 if level==0:
                     parent_nodes = [Node(W[-1]*multiplicand)]

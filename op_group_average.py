@@ -31,7 +31,7 @@ class GroupAverage(Average):
         Check superclass.
         """
         #input is a vector
-        if not self.A: #need to construct the group summing mtx
+        if self.A==None: #need to construct the group summing mtx
             self.init_A_params(ls_ws_mcand)
         if not self.load_A():    
             ws_mcand=ls_ws_mcand[0]
@@ -114,19 +114,19 @@ class GroupAverage(Average):
             for int_dup in xrange(self.duplicates):
                 ary_csr_groups[ix_:ix_+self.int_size]=ls_ws_A_groups[int_dup].flatten()
                 ix_+=self.int_size
-            pdb.set_trace()
             del ls_ws_A_groups    
             #next build the group columns and rows    
             csr_rows=np.zeros(0,)
             csr_cols=np.zeros(0,)
             for int_group_index in xrange(1,int_g_count):
-                g_ix_locs=np.nonzero(ary_csr_groups==int_group_index)
-                if len(g_ix_locs)>0:
+                g_ix_locs=np.nonzero(ary_csr_groups==int_group_index)[0]
+                if g_ix_locs.size>0:
                     csr_cols=np.hstack((csr_cols,np.tile(g_ix_locs,len(g_ix_locs))))
                     csr_rows=np.hstack((csr_rows,np.repeat(g_ix_locs,len(g_ix_locs))))
             csr_data=1.0/self.duplicates*np.ones(csr_rows.size,)
             self.A=csr_matrix((csr_data,(csr_rows,csr_cols)),
                               shape=(self.int_size*self.duplicates,self.int_size*self.duplicates))
+            self.save_A()
             del csr_data
             del csr_rows
             del csr_cols

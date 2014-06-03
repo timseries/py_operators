@@ -89,10 +89,9 @@ class Blur(Operator):
                     c_i = eval('np.ix_' + str(c_i))
                     self.for_kernel_f[c_i] = self.kernel
                     self.for_kernel_f = circshift(self.for_kernel_f,
-                                                  tuple((-self.ary_sz/2.0).astype('uint16')))
+                                                  tuple((-self.ary_sz/2.0).astype('int16')))
                     #take the fft, with the correct size
-                self.for_kernel_f = fftn(self.for_kernel_f,
-                                         s=self.for_fft_sz)
+                self.for_kernel_f = fftn(self.for_kernel_f,s=self.for_fft_sz)
             ary_mcand = self.for_kernel_f * fftn(ary_mcand,
                                                  s=self.for_fft_sz)
             if not self.output_fourier and not self.lgc_even_fft:

@@ -27,9 +27,8 @@ class Operator(Section):
         """
         Also performs the operator adjoint/Hermetian transpose.
         """             
-        self.__invert__()
-        return self
-
+        return self.__invert__()
+        
     def set_output_fourier(self,val):
         """
         Force the output to be fourier samples
