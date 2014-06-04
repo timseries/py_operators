@@ -20,59 +20,68 @@ class Average(Operator):
     def __init__(self,ps_parameters,str_section):
         """
         Class constructor for Downsample. 
+        duplicates: the maximum number of duplicates for any given variable
         """
+        
         super(Average,self).__init__(ps_parameters,str_section)
         self.grouptype=self.get_val('grouptype',False)
-        if self.grouptype=='parentchildren':
-            self.duplicates=2
-        elif self.grouptype=='parentchild':    
-            self.duplicates=2**self.dimension+1
-        else:
-            raise ValueError('unsupported grouptype: ' + self.grouptype)
+        self.duplicates=None
         self.dimension=None
         self.ary_size=None
-        self.A=None
+        self.csr_avg=None
         self.S=None
         self.L=None
         self.theta=None
         self.average_type=None
-        
-    def init_A_params(self,ls_ws_mcand):
+        self.file_path=None
+        self.initialized=False
+
+    def init_csr_avg(self,ws_mcand):
         """
-        Check superclass.
+        Initializes the parameters needed to create sparse Averaging matrix (self.csr_avg)
+        from a WS object. Intuitively, properties of the matrix should depend on the 
+        vector it's multiplying.
         """
-        ws_mcand=ls_ws_mcand[0]
-        ws_mcand.flatten()
+        if ws_mcand.__class__.__name__!='WS':
+            raise ValueError('ws_mcand needs to be a WS')
         self.int_size=ws_mcand.size
         self.tup_shape=ws_mcand.ary_shape
         self.L=ws_mcand.int_levels
         self.dimension=ws_mcand.int_dimension
+        if self.grouptype=='parentchildren':
+            self.duplicates=2
+            self.groupsize=2**self.dimension+1
+        elif self.grouptype=='parentchild':    
+            self.duplicates=2**self.dimension+1
+            self.groupsize=2
+        else:
+            raise ValueError('unsupported grouptype: ' + self.grouptype)
         self.S=ws_mcand.int_subbands
         self.theta=ws_mcand.int_orientations
         self.sparse_matrix_input=self.get_val('sparsematrixinput',False)
         #populate the cluster structure
-        if self.duplicates!=len(ls_ws_mcand):
-            raise ValueError('there are not enough WS-es'+
-                              ' for the replicated variable space')
         self.file_string=(self.average_type+'_'+
                          self.grouptype+'_'+
                          str(self.L)+'_'+
                          str(self.theta)+'_'+
                          str(self.tup_shape).replace(' ','') +'.pkl')
-        self.file_path=None
+        if not self.load_csr_avg():    
+            self.create_csr_avg(ws_mcand)
+            self.save_csr_avg()
+        self.initialized=True
 
-    def load_A(self):
+    def load_csr_avg(self):
         sec_input=sf.create_section(self.get_params(),self.sparse_matrix_input)
         sec_input.filepath+=self.file_string
         self.file_path=sec_input.filepath
-        self.A=sec_input.read({},True)
-        return self.A!=None
-    
-    def save_A(self):
+        self.csr_avg=sec_input.read({},True)
+        return self.csr_avg!=None
+
+    def save_csr_avg(self):
         if not self.file_path:
             self.file_path=self.ps_parameters.str_file_dir+self.file_string
         filehandler=open(self.file_path, 'wb')
-        cPickle.dump(self.A,filehandler)
+        cPickle.dump(self.csr_avg,filehandler)
 
     class Factory:
         def create(self,ps_parameters,str_section):
