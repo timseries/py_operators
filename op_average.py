@@ -28,17 +28,76 @@ class Average(Operator):
         """
         
         super(Average,self).__init__(ps_parameters,str_section)
-        self.grouptype=self.get_val('grouptype',False)
+        self.group_type=self.get_val('grouptype',False)
+        self.average_type=self.get_val('averagetype',False)
         self.duplicates=None
         self.dimension=None
-        self.ary_size=None
+        self.int_size=None
         self.csr_avg=None
         self.S=None
         self.L=None
         self.theta=None
-        self.average_type=None
         self.file_path=None
         self.initialized=False
+
+    def __mul__(self,mcand):
+        """
+        Check superclass.
+        input is a list of ws objects
+
+        __mul__ supports the following for ws_mcand:
+        Forward:
+        --------
+        1) A list of objects that have the flatten() method.
+        2) A K=self.duplicates-sized list of arrays: [Mx1 array,Mx1 array,...].
+        3) One big KMx1 array.
+        
+        Note: A object of type 'WS' needs to be passed to __mul__ if this average object
+        hasn't been previously initialized.
+        
+        Adjoint:
+        --------
+        For avg_type==cluster:
+           1) A single object that has the flatten() method.
+           2) One big array Mx1
+        For avg_type==group:
+           1) A list of objects that have the flatten() method.
+           2) A K=self.duplicates-sized list of arrays: [Mx1 array,Mx1 array,...]
+           3) One big array KMx1
+
+        Returns a list of arrays (cluster adjoint, group) or a single array (cluster forward).
+        """
+        
+        #if pkl-saved version of A doesn't exist, create one and save    
+        mcand_is_list=(mcand.__class__.__name__=='list')
+        mcand_el_is_ws=False
+        mcand_el_is_ary=False
+        mcand_list_sz=0
+        if mcand_is_list:
+            temp_mcand=mcand[0]
+            mcand_list_sz=len(mcand)
+        else:    
+            temp_mcand=mcand
+        mcand_el_is_ws=(temp_mcand.__class__.__name__=='WS')
+        mcand_el_is_ary=(temp_mcand.__class__.__name__=='ndarray')
+        if not self.initialized:
+            self.init_csr_avg(temp_mcand)
+        if mcand_is_list:
+            if self.duplicates!=mcand_list_sz:
+                raise ValueError('not enough elements in mcand exptected '+ str(self.duplicates) + 
+                                     ' got ' + str(mcand_list_sz))
+            mcand=su.flatten_list(mcand)
+        else:
+            if mcand.ndim>1:
+                mcand=mcand.flatten()
+        if self.lgc_adjoint and self.average_type=='cluster': #adjoint
+            mcand=self.csr_avg.transpose()*mcand
+        else: #forward,no need to take the transpose for group, since this matrix is symmetric
+            mcand=self.csr_avg*mcand
+        if (self.average_type=='group' or 
+            (self.lgc_adjoint and self.average_type=='cluster')):
+            mcand=su.unflatten_list(mcand,self.duplicates)
+        return super(Average,self).__mul__(mcand)
 
     def init_csr_avg(self,ws_mcand):
         """
@@ -52,20 +111,20 @@ class Average(Operator):
         self.tup_shape=ws_mcand.ary_shape
         self.L=ws_mcand.int_levels
         self.dimension=ws_mcand.int_dimension
-        if self.grouptype=='parentchildren':
+        if self.group_type=='parentchildren':
             self.duplicates=2
             self.groupsize=2**self.dimension+1
-        elif self.grouptype=='parentchild':    
+        elif self.group_type=='parentchild':    
             self.duplicates=2**self.dimension+1
             self.groupsize=2
         else:
-            raise ValueError('unsupported grouptype: ' + self.grouptype)
+            raise ValueError('unsupported group_type: ' + self.group_type)
         self.S=ws_mcand.int_subbands
         self.theta=ws_mcand.int_orientations
         self.sparse_matrix_input=self.get_val('sparsematrixinput',False)
         #populate the cluster structure
         self.file_string=(self.average_type+'_'+
-                         self.grouptype+'_'+
+                         self.group_type+'_'+
                          str(self.L)+'_'+
                          str(self.theta)+'_'+
                          str(self.tup_shape).replace(' ','') +'.pkl')
@@ -87,7 +146,7 @@ class Average(Operator):
                            for j in xrange(self.duplicates)]
         #coarse to fine assignment of group size inverses (1/g_i)
         #and assignemnt of group numbers
-        if self.grouptype=='parentchildren': 
+        if self.group_type=='parentchildren': 
             #interleave the non-overlapping group number
             #assignments in the two replicated copies            
             for int_dup in xrange(self.duplicates):
@@ -117,8 +176,7 @@ class Average(Operator):
                            ws_csr_avg_data.set_subband(s-self.theta,1.0)
                        else:    
                            ws_csr_avg_data.set_subband(s-self.theta,1.0/self.duplicates)
-                           
-        elif self.grouptype=='parentchild':
+        elif self.group_type=='parentchild':
             #each entry corresponds to a level and is a dict itself
             #store for fast lookup of children indices from the parent index
             dict_level_indices={} 

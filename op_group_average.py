@@ -36,7 +36,7 @@ class GroupAverage(Average):
         if self.duplicates!=len(ls_ws_mcand):
             raise ValueError('there are not enough WS-es'+
                              ' for the replicated variable space')
-        #should give the same result for transpose since A is symmetric
+        #should give the same reskult for transpose since A is symmetric
         #hence we never check the lgc_adjoint attribute        
         #preallocate a vector to store the ws_mcand in
         vec_ix=0
