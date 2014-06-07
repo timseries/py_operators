@@ -55,7 +55,7 @@ class ClusterAverage(Average):
             ws_csr_avg_data.unflatten()
             ary_mcand=ws_csr_avg_data
         else: 
-            #flatten a single ws object (should only be one ws obj in the list)
+            #flatten a single ws object (should only be one ws obj in the list if it is a list)
             if ls_ws_mcand.__class__.__name__=='list':
                 ws_mcand=ls_ws_mcand[0]
             else:    
@@ -74,43 +74,46 @@ class ClusterAverage(Average):
                 ls_ws_result.append(ws_csr_avg_data)
             ary_mcand=ls_ws_result
         return super(ClusterAverage,self).__mul__(ary_mcand)
+          
+    # def create_csr_avg(self,ws_mcand):
+    #     ws_mcand.flatten()
+    #     #preallocate the row locations
+    #     ls_ws_csr_avg_groups=[WS(np.zeros(ws_mcand.ary_lowpass.shape),
+    #                  (ws_mcand.one_subband(0)).tup_coeffs)
+    #                  for j in xrange(self.duplicates)]
+    #     #coarse to fine assignment of cluster size inverses (lambda_Gk)
+    #     #note: this assignment of cluster averaging factors
+    #     #is done in the same was as op_group_average
+    #     #to keep the matrix structure consistent
+    #     for int_dup in xrange(self.duplicates):
+    #         ws_csr_avg_data=ls_ws_csr_avg_groups[int_dup]
+    #         for s in xrange(self.S-1,0,-1):
+    #             if self.grouptype=='parentchildren':
+    #                 if ((s>=self.S-self.theta and int_dup==0) or 
+    #                    (s<=self.theta and int_dup==1)):
+    #                    #the singleton copy for non-overlapped variables
+    #                    ws_csr_avg_data.set_subband(s,1.0)
+    #                 else:    
+    #                    ws_csr_avg_data.set_subband(s,1.0/self.duplicates)
+    #             if self.grouptype=='parentchild':
+    #                 if (s>=self.S-self.theta):
+    #                     if int_dup>0:
+    #                         ws_csr_avg_data.set_subband(s,1.0/(self.duplicates-1))
+    #                 elif (s<=self.theta):
+    #                     if int_dup==0:
+    #                         ws_csr_avg_data.set_subband(s,1.0)
+    #                 else:    
+    #                     ws_csr_avg_data.set_subband(s,1.0/self.duplicates)
 
-    def create_csr_avg(self,ws_mcand):
-        ws_mcand.flatten()
-        #preallocate the row locations
-        ls_ws_csr_avg_data=[WS(np.zeros(ws_mcand.ary_lowpass.shape),
-                     (ws_mcand.one_subband(0)).tup_coeffs)
-                     for j in xrange(self.duplicates)]
-        #coarse to fine assignment of cluster size inverses (lambda_Gk)
-        for int_dup in xrange(self.duplicates):
-            ws_csr_avg_data=ls_ws_csr_avg_data[int_dup]
-            for s in xrange(self.S-1,0,-1):
-                if self.grouptype=='parentchildren':
-                    if ((s>=self.S-self.theta) or (s<=self.theta)):
-                        if int_dup==0: #the singleton copy for non-overlapped variables
-                            ws_csr_avg_data.set_subband(s,1.0)
-                    else:    
-                        ws_csr_avg_data.set_subband(s,1.0/self.duplicates)
-
-                if self.grouptype=='parentchild':
-                    if (s>=self.S-self.theta):
-                        if int_dup>0:
-                            ws_csr_avg_data.set_subband(s,1.0/(self.duplicates-1))
-                    elif (s<=self.theta):
-                        if int_dup==0:
-                            ws_csr_avg_data.set_subband(s,1.0)
-                    else:    
-                        ws_csr_avg_data.set_subband(s,1.0/self.duplicates)
-
-        csr_cols=np.arange(0,self.int_size*self.duplicates)
-        csr_rows=np.tile(np.arange(0,self.int_size),self.duplicates)
-        csr_data=np.zeros(self.int_size*self.duplicates)
-        vec_ix=0
-        for ws_csr_avg_data in ls_ws_csr_avg_data:
-            csr_data[vec_ix:vec_ix+self.int_size]=ws_csr_avg_data.flatten()
-            vec_ix+=self.int_size
-        self.csr_avg=csr_matrix((csr_data,(csr_rows,csr_cols)),
-                          shape=(self.int_size,self.int_size*self.duplicates))
+    #     csr_cols=np.arange(0,self.int_size*self.duplicates)
+    #     csr_rows=np.tile(np.arange(0,self.int_size),self.duplicates)
+    #     csr_data=np.zeros(self.int_size*self.duplicates)
+    #     vec_ix=0
+    #     for ws_csr_avg_data in ls_ws_csr_avg_groups:
+    #         csr_data[vec_ix:vec_ix+self.int_size]=ws_csr_avg_data.flatten()
+    #         vec_ix+=self.int_size
+    #     self.csr_avg=csr_matrix((csr_data,(csr_rows,csr_cols)),
+    #                             shape=(self.int_size,self.int_size*self.duplicates))
 
     class Factory:
         def create(self,ps_parameters,str_section):
