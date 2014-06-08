@@ -34,6 +34,7 @@ class Average(Operator):
         self.dimension=None
         self.int_size=None
         self.csr_avg=None
+        self.csr_avg_save=None
         self.S=None
         self.L=None
         self.theta=None
@@ -78,8 +79,6 @@ class Average(Operator):
             mcand_list_sz=len(mcand)
         else:    
             temp_mcand=mcand
-        mcand_el_is_ws=(temp_mcand.__class__.__name__=='WS')
-        mcand_el_is_ary=(temp_mcand.__class__.__name__=='ndarray')
         if not self.initialized:
             self.init_csr_avg(temp_mcand)
         if mcand_is_list:
@@ -140,10 +139,11 @@ class Average(Operator):
         if self.average_type=='group':
             grp_el_sz=ws_mcand.is_wavelet_complex()+1
             int_g_count=1 #zero is reserved for absence of group,start at 1
+            ws_dtype='uint32'
+        else:
+            ws_dtype='uint8'    
         #preallocate the row locations
-        ls_ws_csr_avg_data=[WS(np.zeros(ws_mcand.ary_lowpass.shape),
-                           (ws_mcand.one_subband(0)).tup_coeffs).cast('float32')
-                           for j in xrange(self.duplicates)]
+        ls_ws_csr_avg_data=[(ws_mcand*0).cast(ws_dtype) for j in xrange(self.duplicates)]
         #coarse to fine assignment of group size inverses (1/g_i)
         #and assignemnt of group numbers
         if self.group_type=='parentchildren': 
@@ -168,14 +168,14 @@ class Average(Operator):
                        #assign the parent and children on each iteration, as with the group variant 
                        #parent
                        if (s>=self.S-self.theta):
-                           ws_csr_avg_data.set_subband(s,1.0)
+                           ws_csr_avg_data.set_subband(s,1)
                        else:    
-                           ws_csr_avg_data.set_subband(s,1.0/self.duplicates)
+                           ws_csr_avg_data.set_subband(s,self.duplicates)
                        #child
                        if (s-self.theta<=self.theta):
-                           ws_csr_avg_data.set_subband(s-self.theta,1.0)
+                           ws_csr_avg_data.set_subband(s-self.theta,1)
                        else:    
-                           ws_csr_avg_data.set_subband(s-self.theta,1.0/self.duplicates)
+                           ws_csr_avg_data.set_subband(s-self.theta,self.duplicates)
         elif self.group_type=='parentchild':
             #each entry corresponds to a level and is a dict itself
             #store for fast lookup of children indices from the parent index
@@ -219,13 +219,13 @@ class Average(Operator):
                         ls_ws_csr_avg_data[int_dup].set_subband(s-self.theta,ls_flat_children[int_dup].reshape(2*tup_s_shape))
                     else:
                         if (s>=self.S-self.theta):
-                            ls_ws_csr_avg_data[int_dup].set_subband(s,1.0/(self.duplicates-1))
+                            ls_ws_csr_avg_data[int_dup].set_subband(s,self.duplicates-1)
                         else:    
-                            ls_ws_csr_avg_data[int_dup].set_subband(s,1.0/(self.duplicates))
+                            ls_ws_csr_avg_data[int_dup].set_subband(s,self.duplicates)
                         if (s-self.theta<=self.theta):
-                            ls_ws_csr_avg_data[int_dup].set_subband(s-self.theta,1.0)
+                            ls_ws_csr_avg_data[int_dup].set_subband(s-self.theta,1)
                         else:
-                            ls_ws_csr_avg_data[int_dup].set_subband(s-self.theta,1.0/(self.duplicates))    
+                            ls_ws_csr_avg_data[int_dup].set_subband(s-self.theta,self.duplicates)
             del dict_child_indices
             del ls_flat_parents
             del ls_flat_children
@@ -244,8 +244,10 @@ class Average(Operator):
                 if grp_el_locs.size>0:
                     csr_cols=np.hstack((csr_cols,np.tile(grp_el_locs,len(grp_el_locs))))
                     csr_rows=np.hstack((csr_rows,np.repeat(grp_el_locs,len(grp_el_locs))))
-            csr_data=1.0/(grp_el_sz*self.groupsize*np.ones(csr_rows.size,))
-            self.csr_avg=csr_matrix((csr_data,(csr_rows,csr_cols)),
+            csr_data=grp_el_sz*self.groupsize*np.ones(csr_rows.size,'uint8')
+            self.csr_avg_save=csr_matrix((csr_data,(csr_rows,csr_cols)),
+                                         shape=(self.int_size*self.duplicates,self.int_size*self.duplicates))
+            self.csr_avg=csr_matrix((1.0/csr_data,(csr_rows,csr_cols)),
                                     shape=(self.int_size*self.duplicates,self.int_size*self.duplicates))
             del ary_csr_groups
         else: #cluster average type
@@ -259,7 +261,9 @@ class Average(Operator):
             #wrap the row numbers back
             while np.max(csr_rows)>=self.int_size:
                 csr_rows[csr_rows>=self.int_size]-=self.int_size
-            self.csr_avg=csr_matrix((csr_data,(csr_rows,csr_cols)),
+            self.csr_avg_save=csr_matrix((csr_data,(csr_rows,csr_cols)),
+                                         shape=(self.int_size,self.int_size*self.duplicates))
+            self.csr_avg=csr_matrix((1.0/csr_data,(csr_rows,csr_cols)),
                                     shape=(self.int_size,self.int_size*self.duplicates))
         del csr_data
         del csr_rows
@@ -269,14 +273,22 @@ class Average(Operator):
         sec_input=sf.create_section(self.get_params(),self.sparse_matrix_input)
         sec_input.filepath+=self.file_string
         self.file_path=sec_input.filepath
-        self.csr_avg=sec_input.read({},True)
-        return self.csr_avg!=None
+        self.csr_avg_save=sec_input.read({},True)
+        if self.csr_avg_save!=None:
+            self.csr_avg=csr_matrix((1.0/self.csr_avg_save.data,
+                                     self.csr_avg_save.indices,
+                                     self.csr_avg_save.indptr),
+                                     shape=self.csr_avg_save.shape)
+            return True
+        return False
 
     def save_csr_avg(self):
         if not self.file_path:
             self.file_path=self.ps_parameters.str_file_dir+self.file_string
         filehandler=open(self.file_path, 'wb')
-        cPickle.dump(self.csr_avg,filehandler)
+        cPickle.dump(self.csr_avg_save,filehandler)
+        filehandler.close()
+        self.csr_avg_save=None
 
     class Factory:
         def create(self,ps_parameters,str_section):
