@@ -183,12 +183,12 @@ class Average(Operator):
             #now assign each group elementwise, slower but the code is clearer
             int_g_count=1
             #we're still assigning the parent (s) and child (s-self.theta) on each iteration
-            for s in xrange(self.S-1,self.theta-1,-1):
+            for s in xrange(self.S-1,self.theta,-1):
                 ws_csr_avg_data=ls_ws_csr_avg_data[0]
                 int_level,int_orientation=ws_csr_avg_data.lev_ori_from_subband(s)
                 int_s_size=ws_csr_avg_data.get_subband(s).size
-                tup_s_shape=ws_csr_avg_data.get_subband(s).shape
-                if not dict_child_indices.has_key(int_level):
+                ary_s_shape=np.array(ws_csr_avg_data.get_subband(s).shape)
+                if not dict_level_indices.has_key(int_level):
                     dict_level_indices[int_level]={}
                 dict_child_indices=dict_level_indices[int_level]
                 #gather the flattened subbands, there are K replicates
@@ -201,9 +201,9 @@ class Average(Operator):
                     for int_child_ix in xrange(2**self.dimension):
                         if not dict_child_indices.has_key(int_child_ix):
                             #get the child indices 
-                            ary_dummy_child=np.zeros(tup_s_shape*2,dtype=bool)
+                            ary_dummy_child=np.zeros(ary_s_shape*2,dtype=bool)
                             ary_dummy_child[ws_csr_avg_data.ds_slices[int_child_ix]]=1
-                            dict_child_indices[int_child_ix]=np.nonzero(ary_dummy_child.flatten())
+                            dict_child_indices[int_child_ix]=np.nonzero(ary_dummy_child.flatten())[0]
                         if ls_flat_parents[int_child_ix][int_parent_ix]>0:
                             int_skip=1
                         ls_flat_parents[int_child_ix+int_skip][int_parent_ix]=int_g_count
@@ -215,8 +215,8 @@ class Average(Operator):
                 #store group numbers or cluster inverse sises back in the ws structures, for this s
                 for int_dup in xrange(self.duplicates):
                     if self.average_type=='group':
-                        ls_ws_csr_avg_data[int_dup].set_subband(s,ls_flat_parents[int_dup].reshape(tup_s_shape))
-                        ls_ws_csr_avg_data[int_dup].set_subband(s-self.theta,ls_flat_children[int_dup].reshape(2*tup_s_shape))
+                        ls_ws_csr_avg_data[int_dup].set_subband(s,ls_flat_parents[int_dup].reshape(ary_s_shape))
+                        ls_ws_csr_avg_data[int_dup].set_subband(s-self.theta,ls_flat_children[int_dup].reshape(2*ary_s_shape))
                     else:
                         if (s>=self.S-self.theta):
                             ls_ws_csr_avg_data[int_dup].set_subband(s,self.duplicates-1)
