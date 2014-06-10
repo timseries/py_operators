@@ -137,21 +137,18 @@ class Average(Operator):
         ws_mcand.flatten()
         #for group averaging 
         #determine the size (grp_el_sz) of each element, used in average energy computation
-        if self.average_type=='group':
-            grp_el_sz=ws_mcand.is_wavelet_complex()+1
-            int_g_count=1 #zero is reserved for absence of group,start at 1
-            ws_dtype='uint32'
-        else:
-            ws_dtype='uint8'    
+        ws_dtype='uint32'
+        int_g_count=1 #zero is reserved for absence of group,start at 1
+        grp_el_sz=ws_mcand.is_wavelet_complex()+1
         #preallocate the row locations
-        ls_ws_csr_avg_data=[(ws_mcand*0).cast(ws_dtype) for j in xrange(self.duplicates)]
+        ls_ws_data=[(ws_mcand*0).cast(ws_dtype) for j in xrange(self.duplicates)]
         #coarse to fine assignment of group size inverses (1/g_i)
         #and assignemnt of group numbers
         if self.group_type=='parentchildren': 
             #interleave the non-overlapping group number
             #assignments in the two replicated copies            
             for int_dup in xrange(self.duplicates):
-                ws_csr_avg_data=ls_ws_csr_avg_data[int_dup]
+                ws_csr_avg_data=ls_ws_data[int_dup]
                 int_s_start=self.S-1-self.theta*int_dup
                 parent_indices=[ar(int_s_start-2*j*self.theta,
                                    int_s_start-2*j*self.theta-self.theta,-1) 
@@ -177,17 +174,15 @@ class Average(Operator):
                            ws_csr_avg_data.set_subband(s-self.theta,1)
                        else:    
                            ws_csr_avg_data.set_subband(s-self.theta,self.duplicates)
+            int_g_count-=1 #the max group count (for just the first orientation at this point)
         elif self.group_type=='parentchild':
             #each entry corresponds to a level and is a dict itself
             #store for fast lookup of children indices from the parent index
             dict_level_indices={} 
             #now assign each group elementwise, slower but the code is clearer
-            int_g_count=1
             #we're still assigning the parent (s) and child (s-self.theta) on each iteration
-            #TODO: instead of going through all the subbands, just do one orientation, and then copy the structure
-            #over to the others (+=max_group_number*theta , theta in 0..self.theta e.g.)
-            for s in xrange(self.S-1,self.theta,-1):
-                ws_csr_avg_data=ls_ws_csr_avg_data[0]
+            for s in xrange(self.S-1,self.theta,-self.theta):
+                ws_csr_avg_data=ls_ws_data[0]
                 int_level,int_orientation=ws_csr_avg_data.lev_ori_from_subband(s)
                 int_s_size=ws_csr_avg_data.get_subband(s).size
                 ary_s_shape=np.array(ws_csr_avg_data.get_subband(s).shape)
@@ -195,9 +190,9 @@ class Average(Operator):
                     dict_level_indices[int_level]={}
                 dict_child_indices=dict_level_indices[int_level]
                 #gather the flattened subbands, there are K replicates
-                ls_flat_parents=[ls_ws_csr_avg_data[int_dup].get_subband(s).flatten()
+                ls_flat_parents=[ls_ws_data[int_dup].get_subband(s).flatten()
                                  for int_dup in xrange(self.duplicates)]
-                ls_flat_children=[ls_ws_csr_avg_data[int_dup].get_subband(s-self.theta).flatten()
+                ls_flat_children=[ls_ws_data[int_dup].get_subband(s-self.theta).flatten()
                                   for int_dup in xrange(self.duplicates)]
                 for int_parent_ix in xrange(int_s_size):
                     int_skip=0
@@ -221,23 +216,45 @@ class Average(Operator):
                         int_g_count+=1
                 #store group numbers or cluster inverse sises back in the ws structures, for this s
                 for int_dup in xrange(self.duplicates):
-                    if self.average_type=='group':
-                        ls_ws_csr_avg_data[int_dup].set_subband(s,ls_flat_parents[int_dup].reshape(ary_s_shape))
-                        ls_ws_csr_avg_data[int_dup].set_subband(s-self.theta,ls_flat_children[int_dup].reshape(2*ary_s_shape))
-                    else: #cluster averaging
+                    ls_ws_data[int_dup].set_subband(s,ls_flat_parents[int_dup].reshape(ary_s_shape))
+                    ls_ws_data[int_dup].set_subband(s-self.theta,ls_flat_children[int_dup].reshape(2*ary_s_shape))
+            #mask the group numbers with the appropriate cluster sizes if we're building a cluster averaging matrix
+            if self.average_type=='cluster':    
+                for s in xrange(self.S-1,self.theta,-self.theta):
+                    ary_s_shape=np.array(ls_ws_data[0].get_subband(s).shape)
+                    ls_flat_parents=[ls_ws_data[int_dup].get_subband(s).flatten()
+                                     for int_dup in xrange(self.duplicates)]
+                    ls_flat_children=[ls_ws_data[int_dup].get_subband(s-self.theta).flatten()
+                                      for int_dup in xrange(self.duplicates)]
+                    for int_dup in xrange(self.duplicates):
                         cluster_mask=ls_flat_parents[int_dup].reshape(ary_s_shape)>0
                         if (s>=self.S-self.theta):
                             #case 1: cluster size is the number of children at the coarsest level
-                            ls_ws_csr_avg_data[int_dup].set_subband(s,(self.duplicates-1)*cluster_mask)
-                        elif (s<=2*self.theta):
+                            ls_ws_data[int_dup].set_subband(s,(self.duplicates-1)*cluster_mask)
+                        elif (s>=2*self.theta):
                             #case 3: the parent and child, when child is finest layer. 
                             #(No overlapped variables for finest layer, so cluster size is 1)
-                            ls_ws_csr_avg_data[int_dup].set_subband(s,self.duplicates*cluster_mask)
+                            ls_ws_data[int_dup].set_subband(s,self.duplicates*cluster_mask)
                             child_cluster_mask=ls_flat_children[int_dup].reshape(2*ary_s_shape)>0
-                            ls_ws_csr_avg_data[int_dup].set_subband(s-self.theta,1*child_cluster_mask)
+                            ls_ws_data[int_dup].set_subband(s-self.theta,1*child_cluster_mask)
                         else:    
-                            #case 2: layers in the middle. The cluster size is the number of children + 1
-                            ls_ws_csr_avg_data[int_dup].set_subband(s,self.duplicates*cluster_mask)
+                            #case 2: layers in the middle with no children. The cluster size is the number of children + 1
+                            ls_ws_data[int_dup].set_subband(s,self.duplicates*cluster_mask)
+            #now that we've done just one tree across a given orientation, we can easily copy this structure
+            #to the other subbands
+            int_g_count-=1 #the max group count (for just the first orientation at this point)
+            if self.average_type=='group':
+                int_offset=int_g_count
+            else:    
+                int_offset=0 #direct copy of the subbands in the same level
+            for s in xrange(self.S-1,self.theta-1,-self.theta):
+                for int_dup in xrange(self.duplicates):
+                    ary_subband=ls_ws_data[int_dup].get_subband(s).copy()
+                    for int_ori in xrange(1,self.theta):
+                        if self.average_type=='group': #else do direct copy for cluster sizes
+                            ary_subband[ary_subband>0]+=int_offset
+                        ls_ws_data[int_dup].set_subband(s-int_ori,ary_subband.copy())
+            int_g_count*=self.theta #max group count for all orientations
             del dict_child_indices
             del ls_flat_parents
             del ls_flat_children
@@ -246,27 +263,31 @@ class Average(Operator):
         #now we can build the sparse matrix...
         if self.average_type=='group':
             #iterate through the group numbers, should have an MXM matrix  at the end
-            ary_csr_groups=su.flatten_list(ls_ws_csr_avg_data)
-            del ls_ws_csr_avg_data    
+            ary_csr_groups=su.flatten_list(ls_ws_data)
             #next build the group columns and rows    
-            csr_rows=np.zeros(0,)
-            csr_cols=np.zeros(0,)
-            for int_group_index in xrange(1,int_g_count):
-                grp_el_locs=np.nonzero(ary_csr_groups==int_group_index)[0]
-                if grp_el_locs.size>0:
-                    csr_cols=np.hstack((csr_cols,np.tile(grp_el_locs,len(grp_el_locs))))
-                    csr_rows=np.hstack((csr_rows,np.repeat(grp_el_locs,len(grp_el_locs))))
+            ary_csr_groups_ix_tmp=sorted(zip(ary_csr_groups,np.arange(ary_csr_groups.size)))
+            ary_csr_groups=np.array([pt[0] for pt in ary_csr_groups_ix_tmp])
+            ary_csr_groups_ix=np.array([pt[1] for pt in ary_csr_groups_ix_tmp])
+            del ary_csr_groups_ix_tmp
+            ary_csr_groups_0_offset=np.nonzero(ary_csr_groups)[0][0]
+            #get rid of the indicies which don't correspond to groups
+            ary_csr_groups=np.array(ary_csr_groups[ary_csr_groups_0_offset::],dtype='uint32')
+            ary_csr_groups_ix=ary_csr_groups_ix[ary_csr_groups_0_offset::]
+            #group the indices
+            ary_csr_groups_ix=np.array([list(ary_csr_groups_ix[ix_:ix_+self.groupsize]) 
+                                        for ix_ in xrange(0,ary_csr_groups_ix.size,self.groupsize)])
+            csr_cols=np.tile(ary_csr_groups_ix,self.groupsize).flatten()
+            csr_rows=np.repeat(ary_csr_groups_ix.flatten(),self.groupsize)
             csr_data=grp_el_sz*self.groupsize*np.ones(csr_rows.size,'uint8')
             self.csr_avg_save=csr_matrix((csr_data,(csr_rows,csr_cols)),
                                          shape=(self.int_size*self.duplicates,self.int_size*self.duplicates))
             self.csr_avg=csr_matrix((1.0/csr_data,(csr_rows,csr_cols)),
                                     shape=(self.int_size*self.duplicates,self.int_size*self.duplicates))
             del ary_csr_groups
+            #end old implementation
         else: #cluster average type
             #build the 'A' matrix in eq 13 and 14
-            # csr_cols=np.arange(0,self.int_size*self.duplicates)
-            # csr_rows=np.tile(np.arange(0,self.int_size),self.duplicates)
-            csr_data=su.flatten_list(ls_ws_csr_avg_data)
+            csr_data=np.array(su.flatten_list(ls_ws_data),dtype='uint8')
             csr_cols=np.nonzero(csr_data)[0]
             csr_data=csr_data[csr_cols]
             csr_rows=csr_cols.copy()
@@ -280,7 +301,7 @@ class Average(Operator):
         del csr_data
         del csr_rows
         del csr_cols
-
+        
     def load_csr_avg(self):
         sec_input=sf.create_section(self.get_params(),self.sparse_matrix_input)
         sec_input.filepath+=self.file_string
