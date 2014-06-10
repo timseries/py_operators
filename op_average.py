@@ -4,6 +4,7 @@ from numpy import array, zeros, conj
 from numpy import arange as ar
 from scipy.sparse import csr_matrix
 import cPickle
+import os
 
 from py_utils.signal_utilities.ws import WS
 import py_utils.signal_utilities.sig_utils as su
@@ -183,6 +184,8 @@ class Average(Operator):
             #now assign each group elementwise, slower but the code is clearer
             int_g_count=1
             #we're still assigning the parent (s) and child (s-self.theta) on each iteration
+            #TODO: instead of going through all the subbands, just do one orientation, and then copy the structure
+            #over to the others (+=max_group_number*theta , theta in 0..self.theta e.g.)
             for s in xrange(self.S-1,self.theta,-1):
                 ws_csr_avg_data=ls_ws_csr_avg_data[0]
                 int_level,int_orientation=ws_csr_avg_data.lev_ori_from_subband(s)
@@ -200,10 +203,14 @@ class Average(Operator):
                     int_skip=0
                     for int_child_ix in xrange(2**self.dimension):
                         if not dict_child_indices.has_key(int_child_ix):
-                            #get the child indices 
+                            #get the child indices for this level, if not previously computed
+                            #this is accomplished by finding the indices corresponding to each of 
+                            #2**dimension corners
                             ary_dummy_child=np.zeros(ary_s_shape*2,dtype=bool)
                             ary_dummy_child[ws_csr_avg_data.ds_slices[int_child_ix]]=1
                             dict_child_indices[int_child_ix]=np.nonzero(ary_dummy_child.flatten())[0]
+                        #we need to indroduce an optional offset if at any point
+                        #when cycling through the children we encounter an occupied group number
                         if ls_flat_parents[int_child_ix][int_parent_ix]>0:
                             int_skip=1
                         ls_flat_parents[int_child_ix+int_skip][int_parent_ix]=int_g_count
@@ -217,15 +224,20 @@ class Average(Operator):
                     if self.average_type=='group':
                         ls_ws_csr_avg_data[int_dup].set_subband(s,ls_flat_parents[int_dup].reshape(ary_s_shape))
                         ls_ws_csr_avg_data[int_dup].set_subband(s-self.theta,ls_flat_children[int_dup].reshape(2*ary_s_shape))
-                    else:
+                    else: #cluster averaging
+                        cluster_mask=ls_flat_parents[int_dup].reshape(ary_s_shape)>0
                         if (s>=self.S-self.theta):
-                            ls_ws_csr_avg_data[int_dup].set_subband(s,self.duplicates-1)
+                            #case 1: cluster size is the number of children at the coarsest level
+                            ls_ws_csr_avg_data[int_dup].set_subband(s,(self.duplicates-1)*cluster_mask)
+                        elif (s<=2*self.theta):
+                            #case 3: the parent and child, when child is finest layer. 
+                            #(No overlapped variables for finest layer, so cluster size is 1)
+                            ls_ws_csr_avg_data[int_dup].set_subband(s,self.duplicates*cluster_mask)
+                            child_cluster_mask=ls_flat_children[int_dup].reshape(2*ary_s_shape)>0
+                            ls_ws_csr_avg_data[int_dup].set_subband(s-self.theta,1*child_cluster_mask)
                         else:    
-                            ls_ws_csr_avg_data[int_dup].set_subband(s,self.duplicates)
-                        if (s-self.theta<=self.theta):
-                            ls_ws_csr_avg_data[int_dup].set_subband(s-self.theta,1)
-                        else:
-                            ls_ws_csr_avg_data[int_dup].set_subband(s-self.theta,self.duplicates)
+                            #case 2: layers in the middle. The cluster size is the number of children + 1
+                            ls_ws_csr_avg_data[int_dup].set_subband(s,self.duplicates*cluster_mask)
             del dict_child_indices
             del ls_flat_parents
             del ls_flat_children
@@ -273,13 +285,14 @@ class Average(Operator):
         sec_input=sf.create_section(self.get_params(),self.sparse_matrix_input)
         sec_input.filepath+=self.file_string
         self.file_path=sec_input.filepath
-        self.csr_avg_save=sec_input.read({},True)
-        if self.csr_avg_save!=None:
-            self.csr_avg=csr_matrix((1.0/self.csr_avg_save.data,
-                                     self.csr_avg_save.indices,
-                                     self.csr_avg_save.indptr),
-                                     shape=self.csr_avg_save.shape)
-            return True
+        if os.path.isfile(self.file_path):
+            self.csr_avg_save=sec_input.read({},True)
+            if self.csr_avg_save!=None:
+                self.csr_avg=csr_matrix((1.0/self.csr_avg_save.data,
+                                         self.csr_avg_save.indices,
+                                         self.csr_avg_save.indptr),
+                                         shape=self.csr_avg_save.shape)
+                return True
         return False
 
     def save_csr_avg(self):
