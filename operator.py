@@ -44,3 +44,8 @@ class Operator(Section):
 
     def get_spectrum(self):
         return 1
+
+    def get_spectrum_sq(self):
+        """Return the squared magnitude of the spectrum.
+        """
+        return 1

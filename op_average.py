@@ -270,7 +270,7 @@ class Average(Operator):
             ary_csr_groups_ix=np.array([pt[1] for pt in ary_csr_groups_ix_tmp])
             del ary_csr_groups_ix_tmp
             ary_csr_groups_0_offset=np.nonzero(ary_csr_groups)[0][0]
-            #get rid of the indicies which don't correspond to groups
+            #get rid of the indices which don't correspond to groups
             ary_csr_groups=np.array(ary_csr_groups[ary_csr_groups_0_offset::],dtype='uint32')
             ary_csr_groups_ix=ary_csr_groups_ix[ary_csr_groups_0_offset::]
             #group the indices
