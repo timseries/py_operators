@@ -38,14 +38,12 @@ class SampledFT(Operator):
         
         """
         if not self.lgc_adjoint:
-            ary_mcand = ary_mcand.real
             ary_mcand = 1/sqrt(ary_mcand.size)*fftshift(fftn(ifftshift(ary_mcand)))
             if self.mask is not None and (ary_mcand.shape != self.mask.shape):
                 ary_mcand = crop_center(ary_mcand, self.mask.shape)
             if self.mask is not None:    
                 ary_mcand *= self.mask
         else:    
-            ary_mcand = ary_mcand.real
             if self.mask is not None and (ary_mcand.shape != self.mask.shape):
                 ary_mcand = pad_center(ary_mcand,self.mask.shape)
             ary_mcand = sqrt(ary_mcand.size)*ifftshift(ifftn(fftshift(ary_mcand)))
