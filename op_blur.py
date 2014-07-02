@@ -27,9 +27,9 @@ class Blur(Operator):
     Attributes:
       str_type (str): uniform, cylindrical, gaussian, pyramid
       spatial (int): 1 to do a convolution with spatial filters.
-      output_fourier (int): 1 to ouput Fourier coefficients.
+      output_fourier (bool): True to ouput Fourier coefficients.
       gaussian_sigma (float): stdev of gaussian blur.
-      lgc_even_fft (itn): 1 to use even-length FFT and pad psf.
+      lgc_even_fft (bool): True to use even-length FFT and pad psf.
       ary_sz (ndarray): the spatial support of the kernel.
       kernel (ndarray): the kernel 'image'.
       int_dimension (int): the dimension of the operator.
