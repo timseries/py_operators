@@ -1,4 +1,5 @@
 import os
+from os.path import join as pjoin
 from nose.tools import raises
 from nose.plugins.attrib import attr
 
@@ -51,17 +52,20 @@ def assert_percentile_almost_equal_to_summary_cube(a, summary, *args, **kwargs):
     assert_percentile_almost_equal(summarise_cube(a), summary, *args, **kwargs)
 
 def setup():
+
+    this_dir = os.path.dirname(__file__)
+                                  
     global lena
     lena = datasets.lena()
 
     global qbgn
-    qbgn = np.load(os.path.join(os.path.dirname(__file__), 'qbgn.npz'))['qbgn']
+    qbgn = np.load(pjoin(this_dir, 'qbgn.npz'))['qbgn']
 
     global verif
-    verif = np.load(os.path.join(os.path.dirname(__file__), 'verification.npz'))
+    verif = np.load(pjoin(this_dir, 'verification.npz'))
 
     global ps_params
-    ps_params = ParameterStruct('testparameters.ini')
+    ps_params = ParameterStruct(pjoin(this_dir, 'testparameters.ini'))
 
     global cell_image
     cell_image = sf.create_section(ps_params,'Input1').read({},True)
@@ -82,8 +86,9 @@ def test_blur_2D():
         H = Blur(ps_params,str_blur)
         assert_almost_equal(H * lena, verif['lena_blur_2D_{0}'.format(idx)], tolerance=TOLERANCE)
 
-def test_deconv_challenge_blur_3D():
-    #test the blurring of the deconvolution challenge psf
+def test_implicit_blur_3D():
+    #test the blurring of the implicit convolution (3D) psf 
+    #used in the EPFL deconvolution challenge
     ls_blurs=['Modality1_3']
 
     for idx, str_blur in enumerate(ls_blurs):

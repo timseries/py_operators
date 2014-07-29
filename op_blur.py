@@ -149,9 +149,6 @@ class Blur(Operator):
         if self.str_type =='uniform':
             ary_kernel[:] = 1.0 / np.prod(self.ary_sz)
         elif self.str_type =='gaussian':
-            # ary_impulse = nd_impulse(self.ary_sz)
-            # gaussian_filter(ary_impulse,self.gaussian_sigma,
-            #                 0,output=ary_kernel)
             ary_kernel = gaussian(self.ary_sz,self.gaussian_sigma)
         elif self.str_type =='hamming':
             ary_kernel = np.hamming(self.ary_sz[0])

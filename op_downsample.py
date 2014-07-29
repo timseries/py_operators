@@ -6,6 +6,8 @@ from numpy import arange as ar
 from py_operators.operator import Operator
 from py_utils.section_factory import SectionFactory as sf
 
+import pdb
+
 class Downsample(Operator):
     """
     Operator which performs a sampling (either upsampling or downsampling)
@@ -25,7 +27,7 @@ class Downsample(Operator):
         self.ds_factor = self.get_val('downsamplefactor',True)
         self.offset = self.get_val('offset',True)
         if self.offset.__class__.__name__ != 'ndarray':
-            self.offset = np.zeros(self.ds_factor.size,)
+            self.offset = np.zeros(self.ds_factor.size,dtype=int)
         self.for_mcand_sz = None
         self.tup_slices=tuple([slice(self.offset[i],None,self.ds_factor[i]) 
                                for i in xrange(self.ds_factor.size)])

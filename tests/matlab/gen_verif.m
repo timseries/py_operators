@@ -16,6 +16,7 @@ addpath(genpath([strFilePath 'toolboxes/']));
 inputs = load('lena.mat');
 lena = inputs.lena;
 qbgn = uint8(gen_qbgn(128,128));
+%%load a cell image phaontom
 cell_image = imreadstack([strFilePath '3d_implicit_conv/phantom_padded.tif']);
 
 %% Generate the blur kernels in the spatial domain, 2D
