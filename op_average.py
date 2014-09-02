@@ -278,7 +278,8 @@ class Average(Operator):
                                         for ix_ in xrange(0,ary_csr_groups_ix.size,self.groupsize)])
             csr_cols=np.tile(ary_csr_groups_ix,self.groupsize).flatten()
             csr_rows=np.repeat(ary_csr_groups_ix.flatten(),self.groupsize)
-            csr_data=grp_el_sz*self.groupsize*np.ones(csr_rows.size,'uint8')
+            # csr_data=grp_el_sz*self.groupsize*np.ones(csr_rows.size,'uint8')
+            csr_data=self.groupsize*np.ones(csr_rows.size,'uint8')
             self.csr_avg_save=csr_matrix((csr_data,(csr_rows,csr_cols)),
                                          shape=(self.int_size*self.duplicates,self.int_size*self.duplicates))
             self.csr_avg=csr_matrix((1.0/csr_data,(csr_rows,csr_cols)),
