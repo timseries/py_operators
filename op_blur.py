@@ -53,7 +53,7 @@ class Blur(Operator):
         self.lgc_even_fft = self.get_val('evenfft',True)
         self.ary_sz = None
         self.create_kernel()
-        self.int_dimension = len(self.ary_sz)
+        self.int_dimension = self.kernel.ndim
         self.for_kernel_f = None
         self.for_sz_max = None
         self.size_min = None
@@ -151,7 +151,7 @@ class Blur(Operator):
         elif self.str_type =='gaussian':
             ary_kernel = gaussian(self.ary_sz,self.gaussian_sigma)
         elif self.str_type =='hamming':
-            ary_kernel = np.hamming(self.ary_sz[0])
+            ary_kernel = np.hamming(self.ary_sz)/np.sqrt(self.ary_sz)
         elif self.str_type=='file':    
             sec_input = sf.create_section(self.ps_parameters,
                                           self.get_val('filesection',False))
@@ -159,6 +159,8 @@ class Blur(Operator):
             self.ary_sz = array(ary_kernel.shape)
         else:
             raise ValueError("no such kernel "+self.str_type+" supported")
+        if self.ary_sz.__class__.__name__=='int':
+            self.ary_sz = np.array([self.ary_sz])
         self.kernel=ary_kernel
 
     def get_spectrum(self):
