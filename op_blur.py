@@ -151,7 +151,8 @@ class Blur(Operator):
         elif self.str_type =='gaussian':
             ary_kernel = gaussian(self.ary_sz,self.gaussian_sigma)
         elif self.str_type =='hamming':
-            ary_kernel = np.hamming(self.ary_sz)/np.sqrt(self.ary_sz)
+            ary_kernel = np.hamming(self.ary_sz)
+            ary_kernel /= np.sum(ary_kernel)
         elif self.str_type=='file':    
             sec_input = sf.create_section(self.ps_parameters,
                                           self.get_val('filesection',False))
