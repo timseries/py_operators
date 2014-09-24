@@ -25,6 +25,7 @@ class DTCWT(Operator):
         self.qshift = self.get_val('qshift',False)
         self.ext_mode = max(self.get_val('ext_mode',True),4)
         self.discard_level_1 = self.get_val('discard_level_1',True)
+        self.output_dtype = self.get_val('output_dtype',False)
         if self.open_cl:
             from dtcwt.opencl import Transform2d
             Transform1d = None #this has nae been implemented yet
@@ -50,7 +51,23 @@ class DTCWT(Operator):
                 else:
                     self.transform = self.transforms[int_dimension-1](biort = self.biort, qshift = self.qshift)
             td_signal = self.transform.forward(multiplicand, self.nlevels, self.include_scale)
-            multiplicand = ws.WS(td_signal.lowpass,td_signal.highpasses,td_signal.scales)
+            if self.output_dtype != '':
+                if self.output_dtype == 'single':
+                    lowpass_type = 'float32'
+                    hipass_type = 'complex64'
+                #hackish conversion here to save memory
+                hipass = None
+                if td_signal.highpasses is not None:
+                    hipass = tuple(np.asarray(pyr_hipass,dtype=hipass_type) 
+                                   for pyr_hipass in td_signal.highpasses)
+                scale = None
+                if td_signal.scales is not None:
+                    scale = tuple(np.asarray(pyr_scale,dtype=self.output_dtype)
+                                  for pyr_scale in td_signal.scales)
+                multiplicand = ws.WS(np.asarray(td_signal.lowpass,dtype=lowpass_type),
+                                     hipass, scale)
+            else:    
+                multiplicand = ws.WS(td_signal.lowpass,td_signal.highpasses,td_signal.scales)
             del td_signal
         else:#adjoint, multiplicand should be a WS object
             multiplicand = self.transform.inverse(Pyramid(multiplicand.ary_lowpass,multiplicand.tup_coeffs))
