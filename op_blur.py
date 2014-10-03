@@ -4,12 +4,15 @@ from numpy.fft import fftn, ifftn
 from numpy import conj, array
 from numpy import arange as ar
 from numpy import minimum as min, maximum as max
-from scipy.ndimage.filters import convolve1d,convolve
+# from scipy.ndimage.filters import convolve1d,convolve
+from scipy.signal import convolve
 from scipy.ndimage.filters import gaussian_filter1d,gaussian_filter
 from scipy.ndimage.filters import uniform_filter1d,uniform_filter
 from py_operators.operator import Operator
 from py_utils.section_factory import SectionFactory as sf
 from py_utils.signal_utilities.sig_utils import nd_impulse, circshift, colonvec, gaussian
+
+import pdb
 
 class Blur(Operator):
     """
@@ -148,6 +151,19 @@ class Blur(Operator):
             ary_kernel = np.zeros(self.ary_sz)
         if self.str_type =='uniform':
             ary_kernel[:] = 1.0 / np.prod(self.ary_sz)
+        elif self.str_type =='separable':
+            pyr_side = np.asfarray([1, 4, 6, 4, 1]) #hard-coded size
+            ary_kernel = np.outer(pyr_side, pyr_side)
+            self.ary_sz = np.asarray(ary_kernel.shape)
+            ary_kernel /= np.sum(ary_kernel)
+        elif self.str_type =='rational':            
+            length = 7 #hard-coded size
+            ary_kernel = np.zeros([2*length+1,2*length+1])
+            for x1 in np.arange(-7,7+1):
+                for x2 in np.arange(-7,7+1):
+                    ary_kernel[x1+7,x2+7] = 1.0/(x1**2+x2**2+1)
+            self.ary_sz = np.asarray(ary_kernel.shape)
+            ary_kernel /= np.sum(ary_kernel)
         elif self.str_type =='gaussian':
             ary_kernel = gaussian(self.ary_sz,self.gaussian_sigma)
         elif self.str_type =='hamming':
