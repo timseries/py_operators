@@ -13,6 +13,7 @@ class Operator(Section):
         super(Operator,self).__init__(ps_parameters,str_section)
         self.output_fourier = 0
         self.open_cl = self.get_val('opencl',True)
+        self.dtype = self.get_val('dtype',False)
         self.lgc_adjoint = 0
         
     def __invert__(self):

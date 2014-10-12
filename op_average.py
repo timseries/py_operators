@@ -131,6 +131,8 @@ class Average(Operator):
         if not self.load_csr_avg():    
             self.create_csr_avg(ws_mcand)
             self.save_csr_avg()
+        if self.dtype != '': #save memory here!
+            self.csr_avg = self.csr_avg.astype(self.dtype)
         self.initialized=True
 
     def create_csr_avg(self,ws_mcand):
@@ -287,7 +289,7 @@ class Average(Operator):
             del ary_csr_groups
             #end old implementation
         else: #cluster average type
-            #build the 'A' matrix in eq 13 and 14
+            #build the 'A' matrix in eq 13 and 14 of icassp paper
             csr_data=np.array(su.flatten_list(ls_ws_data),dtype='uint8')
             csr_cols=np.nonzero(csr_data)[0]
             csr_data=csr_data[csr_cols]
