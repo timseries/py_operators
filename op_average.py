@@ -133,6 +133,8 @@ class Average(Operator):
             self.save_csr_avg()
         if self.dtype != '': #save memory here!
             self.csr_avg = self.csr_avg.astype(self.dtype)
+        else:
+            self.dtype = self.csr_avg.dtype
         self.initialized=True
 
     def create_csr_avg(self,ws_mcand):
@@ -323,7 +325,7 @@ class Average(Operator):
         if not self.file_path:
             self.file_path=self.ps_parameters.str_file_dir+self.file_string
         filehandler=open(self.file_path, 'wb')
-        cPickle.dump(self.csr_avg_save,filehandler)
+        cPickle.dump(self.csr_avg_save,filehandler,-1)
         filehandler.close()
         self.csr_avg_save=None
 
