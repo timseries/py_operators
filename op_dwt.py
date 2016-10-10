@@ -4,16 +4,16 @@ import pywt
 from pywt import wavedec2
 
 from py_utils.signal_utilities import ws as ws
-from py_operators.operator import Operator
+from py_operators.operator_ind import Operator
 
 
 class DWT(Operator):
     """
-    Operator which performs the forward/inverse(~) DWT, which inherits methods from 
-    dtcwt package authored by Rich Wareham. 
+    Operator which performs the forward/inverse(~) DWT, which inherits methods from
+    dtcwt package.
     Returns a WS object (forward), or a numpy array (inverse)
     """
-    
+
     def __init__(self,ps_parameters,str_section):
         """
         Class constructor for DWT
@@ -33,13 +33,13 @@ class DWT(Operator):
         self.transform = None
         self.inverse_transform = None
         self.stacker = None
-        
+
     def __mul__(self,multiplicand):
         """
         Overloading the * operator. multiplicand is{
         forward: a numpy array
         adjoint: a wavelet transform object (WS).}
-        """        
+        """
         if not self.lgc_adjoint:
             int_dimension = multiplicand.ndim
             if self.transform == None:

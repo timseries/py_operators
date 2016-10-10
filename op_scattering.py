@@ -8,14 +8,14 @@ from py_utils.signal_utilities.scat import Scat
 from py_utils.signal_utilities.sig_utils import upsample
 from py_utils.section_factory import SectionFactory as sf
 from py_utils.node import Node
-from py_operators.operator import Operator
+from py_operators.operator_ind import Operator
 
 class Scattering(Operator):
     """
     Operator which performs the forward/inverse(~) Scattering transform attributed to Mallat.
     Returns a WS object (forward), or a numpy array (inverse)
     """
-    
+
     def __init__(self,ps_params,str_section):
         """
         Class constructor for Scattering
@@ -32,13 +32,13 @@ class Scattering(Operator):
         for J in xrange(1,self.max_transform_levels+1):
             ps_params.set_key_val_pairs(self.transform_sec,['nlevels'],[J])
             self.W.append(sf.create_section(ps_params,self.transform_sec))
-        
+
     def __mul__(self,multiplicand):
         """
         Overloading the * operator. multiplicand is{
         forward: a numpy array
         adjoint: a scattering object.}
-        """        
+        """
         W = self.W
         if not self.lgc_adjoint:
             #initial wavelet transform
@@ -67,7 +67,7 @@ class Scattering(Operator):
                                     w_index=-1
                                     child_nodes.append(Node(object))
                                     child_nodes[-1].set_data(upsample(parent_mod.get_subband(subband_index)))
-                                #set the child node path and scale    
+                                #set the child node path and scale
                                 child_nodes[-1].set_path(parent_node.path+[(len(child_nodes))])
                                 child_nodes[-1].set_scale(self.max_transform_levels-w_index-1)
                             parent_node.set_children(child_nodes) #end propagation block

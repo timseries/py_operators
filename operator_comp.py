@@ -3,7 +3,7 @@ from numpy import arange, conj, real
 from numpy.fft import fftn, ifftn
 from py_utils.section import Section
 from py_utils.section_factory import SectionFactory as sf
-from py_operators.operator import Operator
+from py_operators.operator_ind import Operator
 
 class OperatorComp(Operator):
     """

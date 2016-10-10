@@ -3,7 +3,7 @@ import numpy as np
 from numpy.fft import fftn, ifftn, fftshift, ifftshift
 from numpy import conj, sqrt
 
-from py_operators.operator import Operator
+from py_operators.operator_ind import Operator
 from py_utils.section_factory import SectionFactory as sf
 from py_utils.signal_utilities.sig_utils import pad_center, crop_center
 

@@ -8,7 +8,7 @@ from numpy import minimum as min, maximum as max
 from scipy.signal import convolve
 from scipy.ndimage.filters import gaussian_filter1d,gaussian_filter
 from scipy.ndimage.filters import uniform_filter1d,uniform_filter
-from py_operators.operator import Operator
+from py_operators.operator_ind import Operator
 from py_utils.section_factory import SectionFactory as sf
 from py_utils.signal_utilities.sig_utils import nd_impulse, circshift, colonvec, gaussian
 

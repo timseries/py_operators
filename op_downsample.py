@@ -3,7 +3,7 @@ import numpy as np
 from numpy import array, zeros, conj
 from numpy import arange as ar
 
-from py_operators.operator import Operator
+from py_operators.operator_ind import Operator
 from py_utils.section_factory import SectionFactory as sf
 
 import pdb
